@@ -1,0 +1,3878 @@
+var ennServiceUrl;
+var ennServiceMainUrl;
+var serviceUrlNet;
+var outputServer;
+var userInfo;
+var tableServer = null;
+var lstfiles = [];
+var files = [];
+var rejectfiles = [];
+var role, pagerole, classAB, pagedetail, flag, typename, urlpath,jjecode;
+var pipleInfo=[];//管道明细信息
+var ispassjsjd = false;
+var ispassjgys = false;
+var ispassbudget = false;
+var isloaded = false;
+var qttype = '';
+var cbOperateLogTable = "pro_near_oper";
+$(function () {
+    ennServiceMainUrl = top.$.ecity.frame.sysCfg.data.servicecfg['EnnProService'];
+    ennServiceUrl = top.$.ecity.frame.sysCfg.data.servicecfg['EnnCostService'];
+    serviceUrlNet = top.$.ecity.frame.sysCfg.data.servicecfg['NetServer'];
+    outputServer = top.$.ecity.frame.sysCfg.data.servicecfg.OutputServer;
+    tableServer = new $.ecity.frame.task.table();
+    userInfo = top.userInfo;
+    jjecode = userInfo.ecode;
+    judgeTextDisabled($("input[col^='*'],input[row^='*']"), true, true);
+    $("[role='combo']").combobox({
+        onSelect: function () {
+            var model = $(this);
+        }
+    });
+    $("[role='combo'][row]").combobox({
+        onSelect: function () {
+            var model = $(this);
+            if (model.combobox('getText') == "&nbsp;") {
+                model.combobox('setText', '');
+            }
+            var col = model.attr("col");
+            var row = model.attr("row");
+            var table = model.parent().parent().parent().parent();
+            if (col != null && col != "") {
+                var str = "";
+                $.each($("input[col='" + col + "'][role='combo']"), function (index, value) {
+                    value = $(value);
+                    var str2 = value.combobox('getText');
+                    if (str2 != "") {
+                        if (str.indexOf(str2) == -1) {
+                            str += str2 + "+";
+                        }
+                    }
+                });
+                if (str != "") str = str.substring(0, str.length - 1);
+                $("input[col='*" + col + "']").val(str);
+            }
+            //if (role == "Muser" && row != null && row != "") {
+            //    if (model.combobox('getText') == "工程总承包" || model.combobox('getText') == "") {
+            //        judgeTextDisabled($(table).find("input[col='1'][row='" + row + "'],input[col='2'][row='" + row + "']"), false);
+            //        judgeTextDisabled($(table).find("input[col='3'][row='" + row + "']"), true);
+            //        $(table).find("input[col='1'][row='" + row + "'],input[col='2'][row='" + row + "']").removeAttr("activity", "true");
+            //    } else {
+            //        judgeTextDisabled($(table).find("input[col='1'][row='" + row + "'],input[col='2'][row='" + row + "']"), true);
+            //        judgeTextDisabled($(table).find("input[col='3'][row='" + row + "']"), false);
+            //        $(table).find("input[col='1'][row='" + row + "'],input[col='2'][row='" + row + "']").attr("activity", "true");
+            //    }
+            //}
+            if (role == "GSuser" && row != null && row != "") {
+                if (row != "4") {
+                    if (model.combobox('getText') != "" && row == "1") {
+                        //judgeTextDisabled($(table).find("input[row='2'][tag!='true'],input[row='3'][tag!='true']"), true);
+                        judgeComboDisabled($(table).find("input[row='2'][role='combo'],input[row='3'][role='combo']"), true);
+                        clearText($(table).find("input[row='2'],input[row='3'],input[row='*2'],input[row='*3']"));
+                    } else {
+                        //judgeTextDisabled($(table).find("input[row='2'][tag!='true'],input[row='3'][tag!='true']"), false);
+                        judgeComboDisabled($(table).find("input[row='2'][role='combo'],input[row='3'][role='combo']"), false);
+                    }
+                    if (model.combobox('getText') != "" && (row == "2" || row == "3")) {
+                        //judgeTextDisabled($(table).find("input[row='1'][tag!='true']"), true);
+                        judgeComboDisabled($(table).find("input[row='1'][role='combo']"), true);
+                    } else {
+                        if ($(table).find("input[row='2'][role='combo']").combobox('getText') == "" && $("input[row='3'][role='combo']").combobox('getText') == "") {
+                            //judgeTextDisabled($(table).find("input[row='1'][tag!='true']"), false);
+                            judgeComboDisabled($(table).find("input[row='1'][role='combo']"), false);
+                        }
+                    }
+                }
+            }
+            //if (model.combobox('getText') == "据实结算") {
+            //    if (row != null && row != "") {
+            //        judgeTextDisabled($("input[col='1'][row='" + row + "'],input[col='2'][row='" + row + "'],input[col='4'][row='" + row + "'],input[col='5'][row='" + row + "'],input[col='6'][row='" + row + "']"), false);
+            //        $(table).find("input[valuation='true'][row='" + row + "']").parent().find("div[class*='valuation']").css('display', 'none');
+            //    }
+            //} else {
+            //    if (row != null && row != "") {
+            //        judgeTextDisabled($("input[col='1'][row='" + row + "'],input[col='2'][row='" + row + "'],input[col='4'][row='" + row + "'],input[col='5'][row='" + row + "'],input[col='6'][row='" + row + "']"), true);
+            //        $(table).find("input[valuation='true'][row='" + row + "']").parent().find("div[class*='valuation']").css('display', '');
+            //    }
+            //}
+            //if (model.combobox('getText') == "工程总承包") {
+            //    if (row != null && row != "") {
+            //        if (role == "Muser") {
+            //            addValation($(table).find("input[col='1'][row='" + row + "']"));
+            //            addValation($(table).find("input[col='9'][row='" + row + "']"));
+            //        }
+            //        if (role == "GSuser") {
+            //            addValation($(table).find("input[col='2'][row='" + row + "']"));
+            //            addValation($(table).find("input[col='9'][row='" + row + "']"));
+            //        }
+            //        if (role == "Szzy") {
+            //            addValation($(table).find("input[col='-1'][row='" + row + "']"));
+            //            addValation($(table).find("input[col='6'][row='" + row + "']"));
+            //        }
+            //    }
+            //} else {
+            //    if (role == "Muser") {
+            //        removeValation($(table).find("input[col='1'][row='" + row + "']"));
+            //        removeValation($(table).find("input[col='9'][row='" + row + "']"));
+            //    }
+            //    if (role == "GSuser") {
+            //        removeValation($(table).find("input[col='2'][row='" + row + "']"));
+            //        removeValation($(table).find("input[col='9'][row='" + row + "']"));
+            //    }
+            //    if (role == "Szzy") {
+            //        removeValation($(table).find("input[col='-1'][row='" + row + "']"));
+            //        removeValation($(table).find("input[col='6'][row='" + row + "']"));
+            //    }
+            //}
+        }
+    });
+    $("table input[type='text'][role!='combo'][col][row]").keyup(function (k) {
+        validateInteger(this);
+        if (pagerole == "Balance") {
+            if ($(this).attr('field') == "usercount") {
+                //var colindex = $(this).attr("col");
+                //var rowindex = $(this).attr("row");
+                //var dValue = pFloat(parseFloat($(this).val())) - pFloat(parseFloat($(this).attr("old")));
+                //var czusercount = $("#changetab input[type='text'][col='" + colindex + "'][row='" + rowindex + "']");
+                //czusercount.val(dValue);
+                //if (czusercount.val() != "") {
+                //    czusercount.addClass("change");
+                //} else {
+                //    czusercount.removeClass("change");
+                //}
+                //if ($(this).val() != $(this).attr("old")) {
+                //    $(this).addClass("change");
+                //} else {
+                //    $(this).removeClass("change");
+                //}
+            }
+            textKeyUp($(this), "changetab");
+            var col = $(this).attr("col");
+            var row = $(this).attr("row");
+            var zcode = $("#infotab input[type='text'][col='" + col + "'][row='" + row + "']");
+            var dValue = pFloat(parseFloat($(this).val())) - pFloat(parseFloat($(this).attr("old")));
+            var dValue1 = pFloat(parseFloat(zcode.attr("old"))) + dValue;
+            if (zcode.attr('field') != "usercount") {
+                zcode.val(dValue1.toFixed(4));
+            } else {
+                var czusercount = $("#changetab input[type='text'][col='" + col + "'][row='" + row + "']");
+                var hs = czusercount.eq(0);
+                czusercount.val(pFloat(parseFloat(hs.attr("old"))) + dValue);
+            }
+            textKeyUp(zcode, "infotab");
+        } else {
+            var row = $(this).attr("row");
+            if ((row != null && judgeCombo($("#infotab input[role='combo'][row='" + row + "']"))) || $("#infotab input[role='combo'][row='" + row + "']").length <= 0) {
+                textKeyUp($(this), "infotab");
+            } else {
+                $(this).val("");
+            }
+        }
+    }).blur(function (k) {
+        if ($(this).attr('field') != "usercount") $(this).val($(this).val() == "" ? "" : pFloat(parseFloat($(this).val())).toFixed(4));
+    });
+    function textKeyUp(model, parent) {
+        textChange(model);
+        if (parent != null && parent != "") parent = "#" + parent; else parent = "";
+        var model = $(model);
+        var row = model.attr("row");
+        var group = model.attr("group");
+        if (group != null && group != "") {
+            var glead = group.substring(0, 1);
+            var sglead = "?" + glead, aglead = "*" + row;
+            var stotal = 0, gtotal = 0;
+            if (glead == "?") {
+                glead = group.substring(1, group.length);
+                $.each($("" + parent + " input[group='" + glead + "'][row='" + row + "']"), function (index, value) {
+                    value = $(value);
+                    value.val("");
+                    if (value.attr("activity") != 'true') {
+                        //judgeTextDisabled(value, !(model.val() == ""));
+                    }
+                    textChange(value);
+                })
+            } else {
+                glead = group;
+                var br = false;
+                $.each($("" + parent + " input[group='" + glead + "'][row='" + row + "']"), function (index, value) {
+                    value = $(value);
+                    if (value.hasClass("change")) { br = true }
+                    gtotal += pFloat(parseFloat(value.val()));
+                });
+                $("" + parent + " input[group='" + sglead + "'][row='" + row + "']").val(gtotal == 0 ? "" : gtotal.toFixed(4));//数据保留两位小数
+                judgeTextChange($("" + parent + " input[group='" + sglead + "'][row='" + row + "']"), br);
+            }
+            var br = false;
+            $.each($("" + parent + " input[row='" + row + "'][group^='?']"), function (index, value) {
+                value = $(value);
+                if (value.hasClass("change")) { br = true }
+                stotal += pFloat(parseFloat(value.val()));
+            });
+            var fieldCose = $("" + parent + " input[row='" + aglead + "']");
+            fieldCose.val(stotal == 0 ? "" : stotal.toFixed(4));//数据保留两位小数
+            judgeTextChange(fieldCose, br);
+            if (role == "Muser") {
+                var fielddhcb = $("" + parent + " input[row='" + row + "'][field='pjz']");
+                var fieldUsercount = $("" + parent + " input[row='" + row + "'][field='usercount']");
+                if (fielddhcb.length > 0 && fieldUsercount.length > 0) {
+                    var sum = pFloat(parseFloat(fieldCose.val()) / parseFloat(fieldUsercount.val())).toFixed(4);
+                    if (sum != "Infinity") {
+                        fielddhcb.val(sum);
+                    } else {
+                        fielddhcb.val("");
+                    }
+                }
+            }
+            if (role == "GSuser") {
+                if (row == "2" || row == "3") {
+                    $.each($("" + parent + " input[row='1'][col!='0']"), function (index, value) {
+                        value = $(value);
+                        var ctotal = 0;
+                        var col = value.attr("col");
+                        var bc = false;
+                        $.each($(parent + " input[col='" + col + "'][row='2']," + parent + " input[col='" + col + "'][row='3']"), function (indexc, valuec) {
+                            valuec = $(valuec);
+                            if (valuec.hasClass("change")) { bc = true }
+                            ctotal += pFloat(parseFloat(valuec.val()));
+                        });
+                        value.val(ctotal == 0 ? "" : ctotal.toFixed(4));//数据保留两位小数
+                        judgeTextChange(value, bc);
+                    });
+                }
+                var rbr = false;
+                var r1total = 0;
+                $.each($("" + parent + " input[row='1'][group^='?']"), function (index, value) {
+                    value = $(value);
+                    if (value.hasClass("change")) { rbr = true }
+                    r1total += pFloat(parseFloat(value.val()));
+                });
+                $("" + parent + " input[row='*1']").val(r1total == 0 ? "" : r1total.toFixed(4));//数据保留两位小数
+                judgeTextChange($("" + parent + " input[row='*1']"), rbr);
+                $.each($("" + parent + " input[col^='*'][col!='*0']"), function (index, value) {
+                    value = $(value);
+                    var ctotal = 0;
+                    var col = value.attr("col");
+                    var bc = false;
+                    col = col.substring(1, col.length);
+                    $.each($("" + parent + " input[col='" + col + "'][row!='2'][row!='3'][row!='*2'][row!='*3']"), function (indexc, valuec) {
+                        valuec = $(valuec);
+                        if (valuec.hasClass("change")) { bc = true }
+                        ctotal += pFloat(parseFloat(valuec.val()));
+                    });
+                    value.val(ctotal == 0 ? "" : ctotal.toFixed(4));//数据保留两位小数
+                    judgeTextChange(value, bc);
+                })
+            }
+            else {
+                $.each($("" + parent + " input[col^='*'][col!='*0']"), function (index, value) {
+                    value = $(value);
+                    var ctotal = 0;
+                    var col = value.attr("col");
+                    var bc = false;
+                    col = col.substring(1, col.length);
+                    $.each($("" + parent + " input[col='" + col + "']"), function (indexc, valuec) {
+                        valuec = $(valuec);
+                        if (valuec.hasClass("change")) { bc = true }
+                        ctotal += pFloat(parseFloat(valuec.val()));
+                    });
+                    value.val(ctotal == 0 ? "" : ctotal.toFixed(4));//数据保留两位小数
+                    judgeTextChange(value, bc);
+                })
+            }
+            if (role == "Szzy") {
+                calculateCost();
+            }
+        }
+    }
+    function textChange(model) {
+        model = $(model);
+        if (model.attr("old") != null) {
+            if (pFloat(parseFloat(model.val())) != pFloat(parseFloat(model.attr("old")))) {
+                if (!model.hasClass("change")) {
+                    model.addClass("change");
+                }
+                return;
+            }
+        }
+        model.removeClass("change");
+    }
+    function judgeTextChange(model, b) {
+        if (b) {
+            if (!model.hasClass("change")) {
+                model.addClass("change");
+            }
+        } else {
+            model.removeClass("change");
+        }
+    }
+    function judgeCombo(model) {
+        var b = true;
+        model = $(model);
+        if (model != null && model.length > 0) {
+            if (model.combobox("getText") == "") {
+                b = false;
+                $.ecity.dialog.message("请选择计价方式！", 1000);
+            }
+        } else {
+            b = false;
+        }
+        return b;
+    }
+    function getPageParam() {
+        pagerole = decodeURIComponent($.ecity.getPageParam("pagerole"));
+        classAB = decodeURIComponent($.ecity.getPageParam("classAB"));
+        pagedetail = decodeURIComponent($.ecity.getPageParam("pagedetail"));
+        typename = decodeURIComponent($.ecity.getPageParam("typename"));
+        flag = $.ecity.getPageParam('flag');
+        //if (flag == "") {
+        //    pagedetail = "detail";
+        //}
+        switch (typename) {
+            case "民用户":
+                role = "Muser";
+                break;
+            case "工商户":
+                role = "GSuser";
+                break;
+            case "市政中压":
+                role = "Szzy";
+                break;
+        }
+    }
+    function getUrlName(url) {
+        var s = "";
+        if (url != null && url != "") {
+            s = url.split('/');
+            s = s[s.length - 1];
+            s = s.split('.');
+            s = s[0];
+        }
+        return s;
+    }
+    function clearText(model) {
+        model.val("");
+    }
+    $("#printtable").click(function () {
+        //printBalanceSheet();
+    });
+    //其他费支持公式输入
+    $("#sjid [fieldp$='gs']").blur(function () {
+        var val = $(this).val();
+        try {
+            if (val.indexOf("=") == 0) {
+                val = val.substring(1, val.length);
+            }
+            val = val.replace(/（/g, "(").replace(/）/g, ")").replace(/＋/g, "+").replace(/－/g, "-").replace(/×/g, "*").replace(/／/g, "/");
+            val = val.replace(/０/g, "0").replace(/１/g, "1").replace(/２/g, "2").replace(/３/g, "3").replace(/４/g, "4").replace(/５/g, "5").replace(/６/g, "6").replace(/７/g, "7").replace(/８/g, "8").replace(/９/g, "9");
+             /**if (val == "") {
+                return;
+            }*/
+            val = eval(val);
+            if(val!=undefined){
+            val = pFloat(parseFloat(val)).toFixed(4);
+            }
+            $(this).parent().parent().find("[fieldp$='je']").eq(0).val(val);
+            return;
+        } catch (ex) {
+        }
+        top.$.ecity.dialog.message("输入公式错误请检查!", 2000);
+    }).bind('keypress', function (event) {
+        if (event.keyCode == "13") {
+            $(this).trigger('blur');
+        }
+    });
+    getPageParam();
+    LoadUseTemplate();
+    SaveTemplate();
+    ExportCL();
+    ExportList();
+    disableUsable();
+    initbudgettext();
+});
+function addGcBlurEvent() {
+    $("[id^=gc]").unbind('blur');
+    $("[id^=gc]").blur(function () {
+        calculateCost();
+    })
+}
+function calculateCost() {
+    var gcCount = 0;
+    $.each($("[id^=gc]"), function (index, value) {
+        value = $(value);
+        gcCount = (parseFloat(gcCount) + parseFloat(pFloat(value.val()))).toFixed(4);
+    });
+    var fieldPjz = $("input[field='pjz']");
+    $.each($("input[field='pjz']"), function (index, value) {
+        value = $(value);
+        var fieldCost = value.parent().parent().find("input[field='cost']");
+        var sum = pFloat(parseFloat(pFloat(fieldCost.val())) / parseFloat(gcCount)).toFixed(4);
+        if (sum != "Infinity" && sum != "-Infinity") {
+            value.val(sum);
+        } else {
+            value.val("");
+        }
+    });
+}
+function initbudgettext() {
+    switch (pagerole) {
+        case "Balance":
+            $("#budgetperosn").html("结算人：");
+            $("#bztzjs").html("工程结算信息");
+            if (pagedetail == "detail") {
+                $("#printtable").css("display", "");
+            }
+            break;
+        case "Budget":
+            $("#budgetperosn").html("编制人：");
+            $("#bztzjs").html("预算编制信息");
+            break;
+        case "Adjust":
+            $("#budgetperosn").html("调整人：");
+            $("#bztzjs").html("预算调整信息");
+            break;
+    }
+    if (pagedetail == "detail") {
+        $(".file-box").css("display", "none");
+    }
+}
+function pageSpeciality() {
+    if (role == null) return;
+    judgeTextDisabled($("input[col='1'],input[col='2'],input[col='3'],input[col='4'],input[col='5'],input[col='6'],input[col='7']"), true);
+    if (role == "GSuser") {
+        //judgeTextDisabled($("input[col='3'],input[col='1'][row!='1'][row!='2'],input[col='5'][row='2'],input[col='6'][row='2'],input[col='7'],input[col='10']"), true, true);
+        if (classAB == "B") {
+            judgeTextDisabled($("input[col='8'],input[col='9'],input[col='10']"), true);
+        } else {
+        }
+    }
+    if (role == "Muser") {
+        //judgeTextDisabled($("input[col='5'][row!='3'][row!='4'],input[col='6'][row!='3'][row!='4'],input[col='7'][row!='3'][row!='4'],input[col='3'],input[col='7'],input[col='10']"), true);
+        if (classAB == "B") {
+            judgeTextDisabled($("input[col='8'],input[col='9'],input[col='10']"), true);
+            judgeComboDisabled($("input[col='-2']"), true);
+        } else {
+        }
+    }
+    if (role == "Szzy") {
+        //judgeTextDisabled($("input[col='4'],input[col='7']"), true);
+        if (classAB == "B") {
+            judgeTextDisabled($("input[col='8'],input[col='9'],input[col='10']"), true);
+        } else {
+        }
+    }
+}
+function loadValuation(model) {
+    $.each(model.find("input[valuation='true']"), function (index, value) {
+        value = $(value);
+        addValation(value);
+    });
+}
+function addValation(model) {
+    //alert(model.attr("id"));
+    //if (classAB != 'B'||pagedetail=="detail") {
+    //if ((model.attr("disabled") != "disabled" && model.attr("tag") != "true") || pagedetail == "detail") {
+    var divV = "<div class=\"valuation valuationShow\" onclick=\"valuationClick(this);\"></div>";
+    model.parent().append(divV);
+    //}
+    //}
+}
+function removeValation(model) {
+    model.parent().find("div[class*='valuation']").remove();
+}
+function valuationClick(model) {
+    var model = $(model).parent().find("[type='text']");
+    var table = $(model).parent().parent().parent().parent();
+    var row = model.attr("row");
+    var col = model.attr("col");
+    var typenameclass = table.find("input[role='combo'][row='" + row + "']").combobox('getText');
+    var type = "";
+    var tabCol = model.parent().index();
+    var tabRow = model.parent().parent().index();
+    var tableParent = model.parent().parent().parent().parent();
+    var wbs = tableParent.find("tr:eq(" + (parseInt(tabRow) + 1) + ") th:eq(0)").text().replace("+", "").replace("-", "");
+    var titlename = tableParent.find("tr:eq(0) th:eq(" + tabCol + ")").text();
+    var vidmodel = table.find("input[type='text'][field='vid'][row='" + row + "']");
+    var cvidmodel = $("#changetab").find("input[type='text'][field='vid'][row='" + row + "']");
+    var usercount = table.find("input[type='text'][field='usercount'][row='" + row + "']").val();
+    var vid = vidmodel.attr('text') == undefined ? "" : vidmodel.attr('text');
+    var username = userInfo.username;
+    var readonly = "";
+    switch (typenameclass) {
+        case "工程总承包":
+            type = 1;
+            break;
+        case "施工费包干":
+            type = 2;
+            break;
+        case "清单计价":
+            type = 3;
+            break;
+        case "据实结算":
+            type = 4;
+            break;
+    }
+    if (type == -1) {
+        return;
+    }
+    if (type == "") {
+        top.$.ecity.dialog.message("请选择计价方式", 2000);
+        return;
+    }
+    if (unitid == "") {
+        top.$.ecity.dialog.message("不存在unitid", 2000);
+        return;
+    }
+    if (proid == "") {
+        top.$.ecity.dialog.message("不存在proid", 2000);
+        return;
+    }
+    if (pagedetail == "detail" || flag == "audit") {
+        readonly = "readonly";
+    }
+    //if (model.attr("disabled") == "disabled") {
+    //    readonly = "readonly";
+    //}
+    //var title = top.$(".ti_tabContainer div[class*='ti_baseDiv_selected'][class*='ti_baseDiv'] span").text();
+    //var parentWindow = top.publicmethod.getIFrameObj(title);
+    var dgvSH = "", azsg = "", title2 = "", title3 = "";
+    if (role == "Muser") {
+        if (wbs == "挂表" || wbs == "立管") {
+            if (type == 1) {
+                dgvSH = "1,1,1,0,0";
+                azsg = "1";
+            } else if (type == 4) {
+                dgvSH = "1,0,1,0,0";
+                azsg = "0";
+            } else {
+                dgvSH = "1,0,0,0,0";
+                azsg = "0";
+            }
+        } else {
+            if (type == 1) {
+                dgvSH = "1,1,1,1,1";
+                azsg = "1";
+            } else if (type == 4) {
+                dgvSH = "1,0,1,1,1";
+                azsg = "0";
+            } else {
+                dgvSH = "1,0,0,1,1";
+                azsg = "0";
+            }
+        }
+    }
+    if (role == "GSuser") {
+        title2 = "材料费";
+        title3 = "设备费";
+        if (wbs == "成本部分") {
+            if (type == 1) {
+                dgvSH = "1,1,1,1,1";
+                azsg = "1";
+            } else {
+                dgvSH = "1,0,1,1,1";
+                azsg = "0";
+            }
+        } else if (wbs == "室内及设备") {
+            if (type == 1) {
+                dgvSH = "1,1,1,0,0";
+                azsg = "1";
+            } else {
+                dgvSH = "1,0,1,0,0";
+                azsg = "0";
+            }
+        } else {
+            if (type == 1) {
+                dgvSH = "1,1,0,1,1";
+                azsg = "1";
+            } else if (type == 4) {
+                //dgvSH = "1,0,1,0,0";
+                dgvSH = "1,0,1,1,1";
+                azsg = "0";
+            } else {
+                dgvSH = "1,0,0,1,1";
+                azsg = "0";
+            }
+        }
+    }
+    if (role == "Szzy") {
+        if (type == 1) {
+            dgvSH = "1,1,1,1,1";
+            azsg = "1";
+        } else if (type == 4) {
+            dgvSH = "1,0,1,1,1";
+            azsg = "0";
+        } else {
+            dgvSH = "1,0,0,1,1";
+            azsg = "0";
+        }
+    }
+    userInfo.returnCount = null;
+    userInfo.vid = "";
+    top.GetCLToTemplate = GetCLToTemplate;
+    var tab = top.publicmethod.addTab("计算明细", 'module/Budgeting/valuationApply.html?role=' + role + '&isrecheck=' + isrecheck + '&usercount=' + usercount + '&typenameclass=' + typenameclass + '&username=' + username + '&vid=' + vid + '&title3=' + title3 + '&title2=' + title2 + '&azsg=' + azsg + '&dgvSH=' + dgvSH + '&readonly=' + readonly + '&sgdwid=' + unitid + '&titlename=' + titlename + '&wbs=' + wbs + '&type=' + type + '&proid=' + proid + "&pagerole=" + pagerole + "&funid=" + funid + "&pagedetail=" + pagedetail + "&flag=" + flag + "&jjecode=" + jjecode, true, "计算明细");
+    tab.closeCallback = function () {
+        if (userInfo.returnCount != null && userInfo.returnCount.length > 0) {
+            var setModel;
+            if (pagerole == "Balance") {
+                setModel = $("#changetab");
+                cvidmodel.attr('text',userInfo.vid);
+            } else {
+                setModel = table;
+            }
+            $.each(userInfo.returnCount, function (index, value) {
+                var model = setModel.find("input[type='text'][col='" + value.col + "'][row='" + row + "']");
+                if (pagerole == "Balance") {
+                    var v = pFloat(parseFloat(model.val())) + value.count;
+                    model.val(v.toFixed(4));
+                } else {
+                    model.val(value.count);
+                }
+                model.trigger("keyup");
+            });
+            if (pagerole == "Balance") {
+                $.each(userInfo.returnTotalCount, function (index, value) {
+                    var model = table.find("input[type='text'][col='" + value.col + "'][row='" + row + "']");
+                    var v = pFloat(parseFloat(value.count));
+                    model.val(v.toFixed(4));
+                    model.trigger("keyup");
+                });
+            }
+            vidmodel.attr('text', userInfo.vid);
+            top.publicmethod.datachange = "1";
+        }
+    };
+}
+function judgeTextDisabled(model, b, tag) {
+    tag = tag == null ? false : tag;
+    if (b) {
+        model.attr("disabled", "disabled").addClass("disabledT");
+        if (tag) {
+            model.attr("tag", tag);
+        }
+    } else {
+        if (model.attr("tag") != "true") {
+            model.removeAttr("disabled").removeClass("disabledT");
+        }
+    }
+}
+function judgeComboDisabled(model, b, tag) {
+    tag = tag == null ? false : tag;
+    if (b) {
+        model.combobox("disable");
+        model.attr("usable", false);
+        if (tag) {
+            model.attr("tag", tag);
+        }
+    } else {
+        if (model.attr("tag") != "true") {
+            model.combobox("enable");
+            model.removeAttr("usable");
+        }
+    }
+}
+function disableUsable() {
+    judgeTextDisabled($("input[type='text'][usable='false']"), true, true);
+    judgeComboDisabled($("input[role='combo'][usable='false']"), true, true);
+}
+function disableTabFalse() {
+    judgeTextDisabled($("#infotab input[type='text'][col!='-1']"), true, true);//工程结算时，户数可输入
+    judgeTextDisabled($("#changetab input[type='text']"), true, true);//工程结算时，结算调整全部不可输
+    judgeTextDisabled($("input[fieldname]"), true, true);
+    judgeComboDisabled($("#infotab input[role='combo']"), true, true);
+    judgeComboDisabled($("input[role='combo']"), true, true);
+}
+//浏览文档
+function browserdoc(value) {
+    var proid = $.ecity.getPageParam("proid");
+    var str = value.split(',');
+    var downpath = str[1] + str[0];
+    var filename = str[2];
+    var houzhui = filename.split(".").pop();
+    var type = "ennproject/" + proid + "/cost";
+    if (houzhui == "doc" || houzhui == "docx" || houzhui == "txt" || houzhui == "pdf" || houzhui == "png" || houzhui == "jpg" || houzhui == "bmp" || houzhui == "gif") {
+        if (houzhui == "doc" || houzhui == "docx") {
+            $.get($.ecity.url(ennServiceMainUrl + "/downloadDoc?"), { name: str[0] }, function (res) {
+                var rest = ($.type("res") === "string") ? JSON.parse(res) : res;
+                if (rest.success) {
+                    $.get($.ecity.url(ennServiceMainUrl + "/word2html?"), {
+                        "file": str[0],
+                        "type": type
+                    }, function (res) {
+                        var rest = ($.type("res") === "string") ? JSON.parse(res) : res;
+                        if (rest.success) {
+                            window.open(rest.url);
+                        } else {
+                            top.$.ecity.dialog.message(rest.msg, 2000);
+                        }
+                    })
+                }
+            });
+        } else {
+            window.open(downpath);
+        }
+    } else {
+        downfile(value);
+    }
+}
+//下载文档
+function downfile(value) {
+    var str = value.split(',');
+    var url = str[1] + str[0];
+    $.ecity.postWin.post(outputServer + "/download", "_self", { url: url, filename: str[2] });
+}
+//删除上传文件
+function deletefile(index) {
+    var filename = $('#divrecordcontent').datagrid("getRows")[index].filename;
+    $("#divrecordcontent").datagrid('deleteRow', index);
+    var rows = $('#divrecordcontent').datagrid("getRows");
+    $('#divrecordcontent').datagrid("loadData", rows);
+    files.remove(filename);
+    $('#fileField').val("");
+    document.getElementById('textfield').value = "";
+    writeLogSave("6");
+}
+function FillDataGrid(files) {
+    try {
+        $("#divrecordcontent").datagrid('loadData', { total: 0, rows: [] });
+        $("#divrecordcontent").datagrid("loadData", files);
+    } catch (e) {
+        top.$.ecity.dialog.message(e.message);
+    }
+}
+function File(bid, filename, createtime, creater, fileurl, docpath) {
+    this.bid = bid;
+    this.filename = filename;
+    this.createtime = createtime;
+    this.creater = creater;
+    this.fileurl = fileurl;
+    this.docpath = docpath;
+}
+function UploadFile(gid, bid, filename, fileurl, creater, createrid, createtime) {
+    this.gid = gid;
+    this.bid = bid;
+    this.filename = filename;
+    this.fileurl = fileurl;
+    this.creater = creater;
+    this.createrid = createrid;
+    this.createtime = createtime;
+}
+function initDatagrid(state) {
+    $("#divrecordcontent").datagrid({
+        title: "",
+        width: '100%',
+        height: 180,
+        noheader: true,
+        border: true,
+        nowrap: true,
+        striped: true,
+        collapsible: true,
+        loadMsg: "正在加载数据，请稍后......",
+        columns: [[
+                     {
+                         field: 'filename', title: '附件名称', width: 200, align: 'center',
+                         formatter: function (value, row, index) {
+                             return "<a href='javascript:;' onclick='browserdoc(\"" + row.fileurl + "," + row.docpath + "," + row.filename + "\")'>" + value + "</a>";
+                         }
+                     },
+                     { field: 'createtime', title: '上传时间', width: 120, align: 'center' },
+                     { field: 'creater', title: '上传人员', width: 80, align: 'center' },
+                    {
+                        field: '操作', title: '操作', width: 100, align: 'center',
+                        formatter: function (value, row, index) {
+                            var link = '';
+                            if (pagedetail == "detail" || flag == "audit" || typeof (summarytype) != "undefined") {
+                                link += "<a href='javascript:;' style='margin-left:15px' onclick='downfile(\"" + row.fileurl + "," + row.docpath + "," + row.filename + "\")'>下载</a>";
+                            }
+                            else {
+                                link += "<a href='javascript:;' style='margin-left:4px' onclick='deletefile(\"" + index + "\")'>删除</a>";
+                                link += "<a href='javascript:;' style='margin-left:15px' onclick='downfile(\"" + row.fileurl + "," + row.docpath + "," + row.filename + "\")'>下载</a>";
+                            }
+                            return link;
+                        }
+                    }
+        ]],
+        pagination: false, //显示分页工具条
+        rownumbers: false, //显示行号
+        singleSelect: true,//只允许单行选择
+        selectOnCheck: true,
+        onClickRow: function (rowIndex, rowData) {
+            $(this).datagrid('unselectRow', rowIndex);
+        }
+    });
+}
+//上传文件
+function upload() {
+    filePath = $('#fileField').val();
+    document.getElementById('textfield').value = filePath;
+    docName = filePath.split("\\").pop().split(".")[0];
+    docNameTxt = filePath.split("\\").pop();
+
+    //上传文档
+    var options = {
+        url: $.ecity.url(ennServiceMainUrl + "/uploadFile?" + new Date()), //后台的处理，也就是form里的action
+        type: "post",
+        dataType: "application/msword,application/pdf,text/plain", //数据格式，有XML，html，json，默认为文本
+        success: function (response, option) {
+            var result = $(response);
+            response = $(result)[0].innerHTML;
+            var res = typeof (response) == 'string' ? JSON.parse(response) : response;
+            var preUrl = res.photos[0];
+            var bid = curobjgid;
+            if (res.success) {
+                var fileinfo = new UploadFile("", bid, docNameTxt, preUrl, userInfo.trueName, userInfo.id, new Date().format("yyyy-MM-dd HH:mm:ss"));
+                files.push(fileinfo);
+            }
+            //填充datagrid
+            var file = new File();
+            file.filename = docNameTxt;
+            file.bid = bid;
+            var today = new Date();
+            file.createtime = today.format("yyyy-MM-dd HH:mm");
+            file.creater = userInfo.trueName;
+            file.fileurl = res.photos[0];
+            file.docpath = res.url;
+            lstfiles.push(file);
+            FillDataGrid(lstfiles);
+            writeLogSave("5");
+            $.ecity.dialog.message("上传数据服务成功！", 1000);
+        },
+        error: function (response, option) {
+            $.ecity.dialog.message("上传数据服务失败！", 1000);
+            $('#fileField').val('');
+        }
+    };
+    $('#fileForm').ajaxSubmit(options);
+}
+function initfj(obj) {
+    lstfiles = [];
+    var fjinfos = obj.files;
+    if (fjinfos == null || fjinfos.length <= 0) return;
+    for (var i = 0; i < fjinfos.length; i++) {
+        var fjinfo = fjinfos[i];
+        var filename = fjinfo["filename"];
+        var fileurl = fjinfo["fileurl"];
+        var creater = fjinfo["creater"];
+        var createtime = fjinfo["createtime"];
+        var createrid = fjinfo["createrid"];
+        var docpath = urlpath;
+        var gid = fjinfo["gid"];
+        var bid = fjinfo["bid"];
+        var fileinfo = new UploadFile(gid, bid, filename, fileurl, creater, createrid, createtime);
+        files.push(fileinfo);
+        var file = new File(bid, filename, createtime.toDate("yyyy-MM-dd HH:mm"), creater, fileurl, docpath);
+        lstfiles.push(file);
+    }
+    //填充datagrid
+    FillDataGrid(lstfiles);
+}
+Array.prototype.indexOfone = function (val) {
+    for (var i = 0; i < this.length; i++) {
+        if (this[i].filename == val) return i;
+    }
+    return -1;
+};
+Array.prototype.remove = function (val) {
+    var index = this.indexOfone(val);
+    if (index > -1) {
+        this.splice(index, 1);
+    }
+};
+Array.prototype.indexOfid = function (id) {
+    for (var i = 0; i < this.length; i++) {
+        if (this[i].id == id) return i;
+    }
+    return -1;
+};
+Array.prototype.removebyid = function (id) {
+    var index = this.indexOfid(id);
+    if (index > -1) {
+        this.splice(index, 1);
+    }
+};
+Array.prototype.toString = function (id) {
+    var s = "";
+    $.each(this, function (index, value) {
+        s += value + ",";
+    });
+    if (s != "") s = s.substring(0, s.length - 1);
+    return s;
+};
+function parseFloatNew(s) {
+    return pFloat(parseFloat(s));
+}
+function pFloat(f) {
+    f = parseFloat(f);
+    if (f == null || f == "" || isNaN(f)) return 0;
+    return f;
+}
+function judgepassjsjd(proid, type) {
+    //判断项目是否通过技术交底
+    $.ajax({
+        url: $.ecity.url(ennServiceUrl + "/isPassJsjdOrJGYS?"),
+        data: { proid: proid, type: type },
+        type: "get",
+        async: false,
+        dataType: "json",
+        success: function (res) {
+            var result = typeof (res) == 'string' ? JSON.parse(res) : res;
+            if (result.success) {
+                ispassjsjd = true;
+            }
+        },
+        cache: false
+    });
+}
+function judgepassjgys(proid, type) {
+    //判断项目是否通过竣工验收
+    $.ajax({
+        url: $.ecity.url(ennServiceUrl + "/isPassJsjdOrJGYS?"),
+        data: { proid: proid, type: type },
+        type: "get",
+        async: false,
+        dataType: "json",
+        success: function (res) {
+            var result = typeof (res) == 'string' ? JSON.parse(res) : res;
+            if (result.success) {
+                ispassjgys = true;
+            }
+        },
+        cache: false
+    });
+}
+function judgepassbudget(proid, sgdwid) {
+    //判断项目是否通过预算编制
+    $.ajax({
+        url: $.ecity.url(ennServiceUrl + "/isPassbudget?"),
+        data: { proid: proid, sgdwid: sgdwid },
+        type: "get",
+        async: false,
+        dataType: "json",
+        success: function (res) {
+            var result = typeof (res) == 'string' ? JSON.parse(res) : res;
+            if (result.success) {
+                ispassbudget = true;
+            }
+        },
+        cache: false
+    });
+}
+function ComboboxDataYear() {
+    var returnDList = { datalist: null, year: "" };
+    var dataList = [];
+    var data = { name: "", ecode: "" };
+    var selectItem = $("select[mark='Year']");
+    if (selectItem != null && selectItem.length > 0) {
+        var yearMin = 1990;
+        var yearMax = 2050;
+        var msg = [];
+        while (yearMin < yearMax) {
+            var val = yearMin;
+            data = { name: "", ecode: "" };
+            data.name = val;
+            data.ecode = val;
+            dataList.push(data);
+            msg.push({ "text": val + "年", "value": val + "" });
+            yearMin++;
+        }
+        var d = new Date();
+        $.each(selectItem, function (index, value) {
+            returnDList.year = d.getFullYear();
+            $(value).combobox('loadData', msg);
+            $(value).combobox('setValue', d.getFullYear());
+        });
+    }
+    returnDList.datalist = dataList;
+    return returnDList;
+}
+function GetYearData() {
+    var returnDList = { datalist: null, year: "" };
+    var dataList = [];
+    var yearMin = 1990;
+    var yearMax = 2050;
+    while (yearMin < yearMax) {
+        var val = yearMin;
+        data = { name: "", ecode: "" };
+        data.name = val;
+        data.ecode = val;
+        dataList.push(data);
+        yearMin++;
+    }
+    var d = new Date();
+    returnDList.year = d.getFullYear();
+    returnDList.datalist = dataList;
+    return returnDList;
+}
+function Load(title) {
+    $("<div class=\"datagrid-mask\"></div>").css({ display: "block", width: "100%", height: $(window).height(), zIndex: 10000 }).appendTo("body");
+    $("<div class=\"datagrid-mask-msg\"></div>").html("" + title + "").appendTo("body").css({ display: "block", zIndex: 10001, left: ($(document.body).outerWidth(true) - 190) / 2, top: ($(window).height() - 45) / 2 });
+}
+function dispalyLoad() {
+    $(".datagrid-mask").remove();
+    $(".datagrid-mask-msg").remove();
+}
+
+$.extend($.fn.tree.methods, {
+    search: function (jqTree, searchText) {
+        //easyui tree的tree对象。可以通过tree.methodName(jqTree)方式调用easyui tree的方法  
+        var tree = this;
+        //获取所有的树节点  
+        var nodeList = getAllNodes(jqTree, tree);
+
+        //如果没有搜索条件，则展示所有树节点  
+        searchText = $.trim(searchText);
+        if (searchText == "") {
+            for (var i = 0; i < nodeList.length; i++) {
+                $(".tree-node-targeted", nodeList[i].target).removeClass("tree-node-targeted");
+                $(nodeList[i].target).show();
+            }
+            //展开已选择的节点（如果之前选择了）  
+            var selectedNode = tree.getSelected(jqTree);
+            if (selectedNode) {
+                tree.expandTo(jqTree, selectedNode.target);
+            }
+            if (jqTree.data("backCall") != null) {
+                jqTree.data("backCall")();
+            }
+            return;
+        }
+
+        //搜索匹配的节点并高亮显示  
+        var matchedNodeList = [];
+        if (nodeList && nodeList.length > 0) {
+            var node = null;
+            for (var i = 0; i < nodeList.length; i++) {
+                node = nodeList[i];
+                if (isMatch(searchText, node.text)) {
+                    matchedNodeList.push(node);
+                }
+            }
+
+            //隐藏所有节点  
+            for (var i = 0; i < nodeList.length; i++) {
+                $(".tree-node-targeted", nodeList[i].target).removeClass("tree-node-targeted");
+                $(nodeList[i].target).hide();
+            }
+
+            //折叠所有节点  
+            tree.collapseAll(jqTree);
+
+            //展示所有匹配的节点以及父节点              
+            for (var i = 0; i < matchedNodeList.length; i++) {
+                showMatchedNode(jqTree, tree, matchedNodeList[i]);
+            }
+        }
+        if (jqTree.data("backCall") != null) {
+            jqTree.data("backCall")();
+        }
+    },
+    showChildren: function (jqTree, node) {
+        //easyui tree的tree对象。可以通过tree.methodName(jqTree)方式调用easyui tree的方法  
+        var tree = this;
+
+        //展示子节点  
+        if (!tree.isLeaf(jqTree, node.target)) {
+            var children = tree.getChildren(jqTree, node.target);
+            if (children && children.length > 0) {
+                for (var i = 0; i < children.length; i++) {
+                    if ($(children[i].target).is(":hidden")) {
+                        $(children[i].target).show();
+                    }
+                }
+            }
+        }
+    },
+    scrollTo: function (jqTree, param) {
+        //easyui tree的tree对象。可以通过tree.methodName(jqTree)方式调用easyui tree的方法  
+        var tree = this;
+
+        //如果node为空，则获取当前选中的node  
+        var targetNode = param && param.targetNode ? param.targetNode : tree.getSelected(jqTree);
+
+        if (targetNode != null) {
+            //判断节点是否在可视区域                 
+            var root = tree.getRoot(jqTree);
+            var $targetNode = $(targetNode.target);
+            var container = param && param.treeContainer ? param.treeContainer : jqTree.parent();
+            var containerH = container.height();
+            var nodeOffsetHeight = $targetNode.offset().top - container.offset().top;
+            if (nodeOffsetHeight > (containerH - 30)) {
+                var scrollHeight = container.scrollTop() + nodeOffsetHeight - containerH + 30;
+                container.scrollTop(scrollHeight);
+            }
+        }
+    }
+});
+function showMatchedNode(jqTree, tree, node) {
+    //展示所有父节点  
+    $(node.target).show();
+    $(".tree-title", node.target).addClass("tree-node-targeted");
+    var pNode = node;
+    while ((pNode = tree.getParent(jqTree, pNode.target))) {
+        $(pNode.target).show();
+    }
+    //展开到该节点  
+    tree.expandTo(jqTree, node.target);
+    //如果是非叶子节点，需折叠该节点的所有子节点  
+    if (!tree.isLeaf(jqTree, node.target)) {
+        tree.collapse(jqTree, node.target);
+    }
+}
+function isMatch(searchText, targetText) {
+    return $.trim(targetText) != "" && targetText.indexOf(searchText) != -1;
+}
+function getAllNodes(jqTree, tree) {
+    var allNodeList = jqTree.data("allNodeList");
+    if (!allNodeList) {
+        var roots = tree.getRoots(jqTree);
+        allNodeList = getChildNodeList(jqTree, tree, roots);
+        jqTree.data("allNodeList", allNodeList);
+    }
+    return allNodeList;
+}
+function getChildNodeList(jqTree, tree, nodes) {
+    var childNodeList = [];
+    if (nodes && nodes.length > 0) {
+        var node = null;
+        for (var i = 0; i < nodes.length; i++) {
+            node = nodes[i];
+            childNodeList.push(node);
+            if (!tree.isLeaf(jqTree, node.target)) {
+                var children = [];
+                try {
+                    children = tree.getChildren(jqTree, node.target);
+                } catch (ex) {
+                }
+                childNodeList = childNodeList.concat(getChildNodeList(jqTree, tree, children));
+            }
+        }
+    }
+    return childNodeList;
+}
+
+function guid() {
+    /**
+     * @return {string}
+     */
+    function S4() {
+        return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+    }
+    return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4());
+}
+//****************************************************************保存模板
+var templateTableName = "pro_cost_template";
+var addOrupdateTemp = true;
+var oldTemp = [];
+var jjcontent = [];
+var jjcontentData = {};
+function LoadUseTemplate() {
+    if ($("#useTemplate") != null && $("#useTemplate").length > 0) {
+        FetchAllTemp();
+    }
+}
+function FetchAllTemp() {
+    var queryOption = {};
+    //queryOption.outFields = [" gid", "titlename "];
+    queryOption.where = " username ='" + role + "' and usercode ='" + userInfo.username + "' ";
+    //queryOption.where = " username ='" + role + "' and pagerole ='" + pagerole + "' and usercode ='" + userInfo.username + "' ";
+    queryOption.callback = function (res) {
+        if ($.ecity.error.validate(res)) {
+            $.ecity.error.show(res);
+            return;
+        }
+        //if (res.features != null && res.features.length > 0) {
+        //}
+        oldTemp = res.features;
+
+        bindTable($("#useTemplate"), oldTemp);
+    };
+    tableServer.query(serviceUrlNet, templateTableName, queryOption)
+}
+function SaveTemplate() {
+    $("#saveTemplate").click(function () {
+        initMask();
+    });
+}
+function SaveEvent() {
+    var entitytemp = {};
+    var divTextVal = $("#dialogText").val();
+    if (divTextVal == "") {
+        //$.ecity.dialog.message("请输入模板名称！", 1000);
+        alert("请输入模板名称！");
+        return;
+    }
+    if (role == "" || pagerole == "") {
+        alert("角色不确定请重试！");
+        return;
+    }
+    var tablename = "infotab";
+    //if (pagerole == "Balance") {
+    //    tablename = "changetab";
+    //}
+    var inputText = $("#" + tablename).find("input[type='text']");
+    var str = "";
+    $.each(inputText, function (index, value) {
+        value = $(value);
+        var field = value.attr("field");
+        if (field == "gid" || field == "vid") { return true; }
+        var row = value.attr("row");
+        var disabled = value.attr("disabled");
+        disabled = disabled == null ? "" : disabled;
+        if (field != null && field != "" && row != null && row != "") {
+            str += field + ":" + row + ":" + value.val() + ":" + disabled + ";"
+        }
+    });
+    var inputConbo = $("#" + tablename).find("[role='combo']");
+    var str2 = "";
+    $.each(inputConbo, function (index, value) {
+        value = $(value);
+        var field = value.attr("field");
+        var row = value.attr("row");
+        if (field != null && field != "" && row != null && row != "") {
+            str2 += field + ":" + row + ":" + value.combobox('getText') + ";"
+        }
+    });
+    addOrupdateTemp = true;
+    entitytemp.username = role;
+    entitytemp.usercode = userInfo.username;
+    entitytemp.pagerole = pagerole;
+    entitytemp.titlename = divTextVal;
+    entitytemp.textcontent = str;
+    entitytemp.combocontent = str2;
+    var isexist = false;
+    $.each(oldTemp, function (i, obj) {
+        if (obj.attributes.titlename == entitytemp.titlename) {
+            isexist = true;
+            return false;
+        }
+    });
+    if (isexist) {
+        top.$.ecity.dialog.message("模板名称已存在，请重新输入!", 1000);
+        return;
+    }
+    FetchAllCL(entitytemp, function () {
+        FetchByTitleName(entitytemp, function () { saveDataTemplate(entitytemp) });
+    });
+    removeMask();
+}
+function FetchAllCL(entitytemp, x) {
+    if (unitid == "") {
+        top.$.ecity.dialog.message("不存在unitid", 2000);
+        return;
+    }
+    if (proid == "") {
+        top.$.ecity.dialog.message("不存在proid", 2000);
+        return;
+    }
+    var condition = {};
+    condition['proid'] = proid;
+    condition['sgdwid'] = unitid;
+    condition['pagerole'] = pagerole;
+    condition['funid'] = funid;
+    $.get($.ecity.url(ennServiceUrl + "/getAllMxInfo?" + new Date()), condition, function (response) {
+        var res = JSON.parse(response);
+        if (res.success) {
+            entitytemp.jjcontent = "";
+            if (res.data != null && res.data.length > 0) {
+                entitytemp.jjcontent = res.data;
+            }
+            if (x != null) {
+                x();
+            }
+        }
+        else {
+            $.ecity.error.show(res, 1200);
+        }
+    });
+}
+function GetCLToTemplate(condition) {
+    var returnTemplate = null;
+    if (jjcontent != null && jjcontent.length > 0) {
+        $.each(jjcontent, function (index, value) {
+            if (value.wbs == condition.wbs && value.type == condition.type) {
+                returnTemplate = value;
+                return false;
+            }
+        });
+    }
+    return returnTemplate;
+}
+function DelClToTemplate(condition) {
+    var i = -1;
+    if (jjcontent != null && jjcontent.length > 0) {
+        $.each(jjcontent, function (index, value) {
+            if (value.wbs == condition.wbs && value.type == condition.type) {
+                i = index;
+                return false;
+            }
+        });
+    }
+    if (i != -1) {
+        jjcontent.splice(i, 1);
+    }
+}
+function FetchByTitleName(entitytemp, x) {
+    var queryOption = {};
+    queryOption.where = " username ='" + role + "' and pagerole ='" + pagerole + "' and titlename ='" + entitytemp.titlename + " and usercode =' '" + userInfo.username + "' ";
+    queryOption.callback = function (res) {
+        if ($.ecity.error.validate(res)) {
+            $.ecity.error.show(res);
+            return;
+        }
+        if (res.features != null && res.features.length > 0) {
+            addOrupdateTemp = false;
+            entitytemp.gid = res.features[0].attributes.gid;
+        }
+        if (x != null) {
+            x();
+        }
+    };
+    tableServer.query(serviceUrlNet, templateTableName, queryOption)
+}
+function saveDataTemplate(entity) {
+    if (addOrupdateTemp) {
+        //var data = JSON.stringify(entity);
+        tableServer.append(serviceUrlNet, templateTableName, entity, function (res) {
+            if ($.ecity.error.validate(res)) {
+                $.ecity.error.show(res);
+                return;
+            }
+            if (res.addResults[0].success) {
+                LoadUseTemplate();
+                writeLogSave("7");
+                top.$.ecity.dialog.message("数据管理成功!", 2000);
+            }
+            else {
+                top.$.ecity.dialog.message("数据管理失败!", 1000);
+            }
+        })
+    } else {
+        //var data = JSON.stringify(entity);
+        tableServer.update(serviceUrlNet, templateTableName, entity, function (res) {
+            if ($.ecity.error.validate(res)) {
+                $.ecity.error.show(res);
+                return;
+            }
+            if (res.updateResults[0].success) {
+                LoadUseTemplate();
+                writeLogSave("8");
+                top.$.ecity.dialog.message("更新数据管理成功!", 2000);
+            }
+            else {
+                top.$.ecity.dialog.message("更新数据管理失败!", 1000);
+            }
+        })
+    }
+}
+function initMask(id) {
+    var msgs = "";
+    var objWidth = 0;
+    var objHeight = 0;
+    var obj;
+    if (id == null) {
+        obj = $("body");
+    } else {
+        obj = $("#" + id);
+    }
+    var mask = $("<div class=\"table-mask\" style=\"display:block\"></div>");
+    mask.appendTo(obj);
+    objWidth = obj.width();
+    objHeight = obj.height();
+
+    var divHtml = "<div class=\"modal-dialog\">";
+    divHtml += "<div class=\"modal-content\">";
+    divHtml += "<div class=\"modal-header\">";
+    divHtml += "<button onclick=\"removeMask()\" class=\"bootbox-close-button close\" aria-hidden=\"true\" type=\"button\" data-dismiss=\"modal\">×</button><h4 class=\"modal-title\">请输入模板标题</h4>";
+    divHtml += "</div>";
+    divHtml += "<div class=\"modal-body\">";
+    divHtml += "<div class=\"bootbox-body\">";
+    divHtml += "<input id=\"dialogText\" class=\"bootbox-input bootbox-input-text form-control\" type=\"text\" autocomplete=\"off\">";
+    divHtml += "</div>";
+    divHtml += "</div>";
+    divHtml += "<div class=\"modal-footer\">";
+    divHtml += "<button onclick=\"SaveEvent()\" class=\"btn2 btn-primary\" type=\"button\" data-bb-handler=\"confirm\">确认</button>";
+    divHtml += "<button onclick=\"removeMask()\" class=\"btn2 btn-default\" type=\"button\" data-bb-handler=\"cancel\">取消</button>";
+    divHtml += "</div>";
+    divHtml += "</div>";
+    divHtml += "</div>";
+
+    //$(divHtml).appendTo(obj);
+    var msg = $("<div class=\"table-mask-msg\" style=\"display:block\"></div>").html(divHtml).appendTo(obj);
+
+    msg.css("left", (objWidth / 2) - 200);
+    msg.css("top", (objHeight / 2) - 150);
+}
+function removeMask(id) {
+    var obj;
+    if (id == null) {
+        obj = $("body");
+    } else {
+        obj = $("#" + id);
+    }
+    obj.children("div.table-mask-msg").remove();
+    obj.children("div.table-mask").remove();
+}
+function addMask(id, backNone) {
+    var obj;
+    if (id == null) {
+        obj = $("body");
+    } else {
+        obj = $("#" + id);
+    }
+    var background = "";
+    if (backNone != null) {
+        background = "background:" + backNone;
+    }
+    var mask = $("<div class=\"table-mask\" style=\"display:block;z-index:1000;" + background + "\"></div>");
+    mask.appendTo(obj);
+}
+function deleteMask(id) {
+    var obj;
+    if (id == null) {
+        obj = $("body");
+    } else {
+        obj = $("#" + id);
+    }
+    obj.children("div.table-mask").remove();
+}
+function deleteTemplate(gid) {
+    tableServer.del(serviceUrlNet, templateTableName, gid,
+            function (jsondata) {
+                if ($.ecity.error.validate(jsondata)) {
+                    $.ecity.error.show(jsondata);
+                    return;
+                }
+                $.ecity.dialog.message("删除成功!", 2000);
+                LoadUseTemplate();
+            }
+    )
+}
+function selectTemplate(gid) {
+    var data = {};
+    var tablename = "infotab";
+    //if (pagerole == "Balance") {
+    //    tablename = "changetab";
+    //}
+    clearTableText($("#infotab"));
+    clearTableText($("#changetab"));
+    if (oldTemp != null && oldTemp.length > 0) {
+        $.each(oldTemp, function (index, value) {
+            if (value.attributes.gid == gid) {
+                data = value.attributes;
+                return false;
+            }
+        });
+        if (data != null) {
+            if (data.combocontent != null && data.combocontent != "") {
+                var combocontent = data.combocontent.split(";");
+                if (combocontent != null && combocontent.length > 0) {
+                    $.each(combocontent, function (index, value) {
+                        var keyValue = value.split(":");
+                        if (keyValue != null && keyValue.length > 2) {
+                            var field = keyValue[0];
+                            var row = keyValue[1];
+                            var value = keyValue[2];
+                            $("#" + tablename).find("input[role='combo'][field='" + field + "'][row='" + row + "']").combobox("setText", value);
+                            if(field == "controlway" || field == "material"){
+                                $("#" + "changetab").find("input[role='combo'][field='" + field + "'][row='" + row + "']").combobox("setText", value);
+                            }
+                        }
+                    });
+                }
+            }
+            if (data.textcontent != null && data.textcontent != "") {
+                var textcontent = data.textcontent.split(";");
+                if (textcontent != null && textcontent.length > 0) {
+                    $.each(textcontent, function (index, value) {
+                        var keyValue = value.split(":");
+                        if (keyValue != null && keyValue.length > 2) {
+                            var field = keyValue[0];
+                            if (field == "gid" || field == "vid") { return true; }
+                            var row = keyValue[1];
+                            var value = keyValue[2];
+                            var disabled = keyValue[3];
+                            var inputText = $("#" + tablename).find("input[field='" + field + "'][row='" + row + "']");
+                            if (value == "Infinity") value = "";
+                            inputText.val(value);
+                            if (disabled == "disabled") {
+                                judgeTextDisabled(inputText, true);
+                            }
+                            if (inputText.length > 0 && inputText.attr('row').indexOf("*") == -1 && value != "") {
+                                if (disabled != "disabled") {
+                                    inputText.trigger("keyup");
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            if (data.jjcontent != null && data.jjcontent != "") {
+                jjcontent = JSON.parse(data.jjcontent);
+                saveTemplateJJInfo();
+            }
+        }
+        loadClear();
+    }
+}
+function loadClear() {
+    var model;
+    //if (pagerole == "Balance") {
+    //    model = $("#changetab");
+    //} else {
+    model = $("#infotab");
+    //}
+    removeClear(model);
+    $.each(model.find("[clear='true']"), function (index, value) {
+        value = $(value);
+        addClear(value);
+    });
+}
+function addClear(model) {
+    var divV = "<div class=\"tempClear tempClearShow\" onclick=\"clearClick(this);\"></div>";
+    model.parent().append(divV);
+}
+function removeClear(model) {
+    model.parent().find("div[class*='tempClear']").remove();
+}
+function clearClick(model) {
+    var model = $(model).parent().find("[type='text']");
+    var table = $(model).parent().parent().parent().parent();
+    var row = model.attr("row");
+    var oldrow = row;
+    var col = model.attr("col");
+    row = row.replace("*", "");
+    var typenameclass = table.find("input[role='combo'][row='" + row + "']").combobox('getText');
+    var type = "";
+    var tabCol = model.parent().index();
+    var tabRow = model.parent().parent().index();
+    var tableParent = model.parent().parent().parent().parent();
+    var wbs = tableParent.find("tr:eq(" + (parseInt(tabRow) + 1) + ") th:eq(0)").text().replace("+", "").replace("-", "");
+    var titlename = tableParent.find("tr:eq(0) th:eq(" + tabCol + ")").text();
+    switch (typenameclass) {
+        case "工程总承包":
+            type = 1;
+            break;
+        case "施工费包干":
+            type = 2;
+            break;
+        case "清单计价":
+            type = 3;
+            break;
+        case "据实结算":
+            type = 4;
+            break;
+    }
+    //table.find("input[type='text'][row='" + row + "']").val('');
+    DelClToTemplate({ wbs: wbs, type: type });
+    $.each(table.find("input[type='text'][row='" + row + "']"), function (index, value) {
+        value = $(value);
+        value.val('');
+        table.find("input[type='text'][row='" + row + "'][field='vid']").text('');
+        //if (table.find("input[type='text'][row='" + oldrow + "']").eq(0).val() == "") {
+        //    table.find("input[type='text'][row='" + row + "'][field='vid']").text('');
+        //    return false;
+        //}
+        value.trigger("keyup");
+    });
+    if (pagerole == "Budget") {
+        table.find("input[role='combo'][row='" + row + "'][field='controlway']").combobox('select', "0");
+    }
+}
+function ExportCL() {
+    $("#exportCLInfo").click(function () {
+        LoadMsgTipe("正在导出材料明细...");
+        $.ajax({
+            url: $.ecity.url(ennServiceUrl + "/exportExcel?"),
+            data: { proid: proid, sgdwid: unitid, type: "1", pagerole: pagerole, funid: funid },
+            type: "get",
+            async: true,
+            dataType: "json",
+            success: function (res) {
+                var result = typeof (res) == 'string' ? JSON.parse(res) : res;
+                if (result.success) {
+                    if (result.url == "" || result.url == null) {
+                        HideMsgTipe();
+                        top.$.ecity.dialog.message("无材料明细信息", 1200);
+                        return;
+                    }
+                    HideMsgTipe();
+                    //location.href = result.url;
+                    $.ecity.postWin.post(outputServer + "/download", "_self", { url: result.url, filename: result.filename });
+                }
+            },
+            cache: false
+        });
+    });
+}
+function ExportList() {
+    $("#exportListInfo").click(function () {
+        LoadMsgTipe("正在导出清单明细...");
+        $.ajax({
+            url: $.ecity.url(ennServiceUrl + "/exportExcel?"),
+            data: { proid: proid, sgdwid: unitid, type: "2", pagerole: pagerole, funid: funid },
+            type: "get",
+            async: true,
+            dataType: "json",
+            success: function (res) {
+                var result = typeof (res) == 'string' ? JSON.parse(res) : res;
+                if (result.success) {
+                    if (result.url == "" || result.url == null) {
+                        HideMsgTipe();
+                        top.$.ecity.dialog.message("无清单明细信息", 1200);
+                        return;
+                    }
+                    HideMsgTipe();
+                    //location.href = result.url;
+                    $.ecity.postWin.post(outputServer + "/download", "_self", { url: result.url, filename: result.filename });
+                }
+            },
+            cache: false
+        });
+    });
+}
+function saveTemplateJJInfo() {
+    var attTableName = "pro_cost_algorithm";
+    jjcontentData = jjcontent.pop();
+    if (jjcontentData != null) {
+        var entity = {};
+        entity.proid = proid;
+        entity.wbs = jjcontentData.wbs;
+        entity.type = jjcontentData.type;
+        entity.sgdwid = unitid;
+        entity.funid = funid;
+        entity.pagerole = pagerole;
+        entity.username = userInfo.username;
+        entity.azcontent = jjcontentData.azcontent;
+        entity.bgcontent = jjcontentData.bgcontent;
+        entity.tjcontent = jjcontentData.tjcontent;
+        entity.dgcontent = jjcontentData.dgcontent;
+        entity.qtclcontent = jjcontentData.qtclcontent;
+        entity.azclcontent = jjcontentData.azclcontent;
+        entity.gid = "";
+        var data = JSON.stringify(entity);
+        var content = {
+            baseinfo: data
+        }; 
+        initMask2();
+        $.post($.ecity.url(ennServiceUrl + "/saveAlgorithm?" + new Date() + "&f=json"), content, function (res) {
+            $.type(res) == 'string' && (res = JSON.parse(res));
+            if ($.ecity.error.validate(res)) {
+                $.ecity.error.show(res,1200);
+                return;
+            }
+            if (res.success) {
+                var vid = res.objectId;
+                $.each($("#infotab [field='wbs']"), function (index, value) {
+                    value = $(value);
+                    if (value.text().replace('+', '').replace('-', '') == jjcontentData.wbs) {
+                        $(value.parent()).find("input[field='vid']").attr('text',vid);
+                        if (pagerole == "Balance") {
+                            var row = $(value.parent()).find("input[field='vid']").attr("row");
+                            $("#changetab").find("input[field='vid'][row='" + row + "']").attr('text',vid);
+                        }
+                        return false;
+                    }
+                });
+                saveTemplateJJInfo();
+            }
+            else {
+
+            }
+            removeMask2();
+        });
+    }
+}
+function clearTableText(model) {
+    model.find("input[type='text']").val('');
+    model.find("input[type='text']").text('');
+}
+//***********************************************************************页面重构
+var roletype = "";
+var budgettype = 0;//甲方   乙方
+var checktype = 0;
+function reject(rejectcbgid,rejecttzgid,reason) {
+    if (reason == "") {
+        top.$.ecity.dialog.message("驳回原因不能为空", 1200);
+        return;
+    }
+    initMask2();
+    var content = {
+        proid: proid,
+        bid: rejectcbgid,
+        unitid: unitid,
+        unitname: unitname,
+        checker: userInfo.trueName,
+        checkerid: userInfo.id,
+        reason: reason,
+        funid: funid,
+        bgtype: bgtype,
+        type: budgettype,
+        typename: typename,
+        files: JSON.stringify(rejectfiles)
+    };
+    if (pagerole == "Balance") {
+        content.bid = rejectcbgid + "," + rejecttzgid;
+    }
+    $.post($.ecity.url(ennServiceUrl + "/reject?" + new Date() + "&f=json"), content, function (response) {
+        var res = JSON.parse(response);
+        removeMask2();
+        if (res.success) {
+            try {
+                writeLogSave("4");
+            } catch (e) {
+
+            }
+            top.$.ecity.dialog.message("成功驳回", 1200);
+            top.publicmethod.saveColse = "1";
+            top.publicmethod.closeCurrTab();
+        }
+        else {
+            $.ecity.error.show(res, 1200);
+        }
+    });
+}
+function finish() {
+    ////检查是否有变更没有复审通过
+    //var isneedystz = false;
+    //if (pagerole == "Balance") {
+    //    LoadMsgTipe("正在检查是否有变更核算没通过");
+    //    $.ajax({
+    //        url: $.ecity.url(ennServiceUrl + "/isPassYSTZ?"),
+    //        data: { proid: proid, unitid: unitid },
+    //        type: "get",
+    //        async: false,
+    //        dataType: "json",
+    //        success: function (res) {
+    //            var result = typeof (res) == 'string' ? JSON.parse(res) : res;
+    //            if (result.success) {
+    //                isneedystz = result.isneedystz;
+    //                HideMsgTipe();
+    //            }
+    //        },
+    //        cache: false
+    //    });
+    //    if (isneedystz) {
+    //        top.$.ecity.dialog.message("有变更核算复审没通过，无法进行确认操作", 1200);
+    //        return;
+    //    }
+    //}
+    initMask2();
+    var person = userInfo.trueName + "#" + $("#bzr").html();
+    var content = {
+        proid: proid,
+        bid: curobjgid,
+        unitid: unitid,
+        unitname: unitname,
+        checker: person,
+        checkerid: userInfo.id,
+        type: budgettype
+    };
+    if (pagerole == "Balance") {
+        content.bid = curobjgid + "," + tzobjgid;
+    }
+    $.post($.ecity.url(ennServiceUrl + "/pass?" + new Date() + "&f=json"), content, function (res) {
+        $.type(res) == 'string' && (res = JSON.parse(res));
+        if ($.ecity.error.validate(res)) {
+            removeMask2();
+            $.ecity.error.show(res, 4000);
+            return;
+        }
+        removeMask2();
+        if (res.success) {
+            try {
+                writeLogSave(state);
+            } catch (e) {
+
+            }
+            top.$.ecity.dialog.message("审核成功", 1200);
+            top.publicmethod.closeCurrTab();
+        }
+    });
+}
+function saveData(state) {
+    if(global_refreshPag){//提交复审提示请保存物料核销界面，防止未刷新页面再次保存
+       top.$.ecity.dialog.message("请保存物料核销界面！", 2000);
+            return;
+    }
+    var zjyid = $("#cmbfsry").combobox("getValue");
+    var zjyname = $("#cmbfsry").combobox("getText");
+    if (state == "2" && roletype == "" && budgetparty == "甲方") {
+        top.$.ecity.dialog.message("请选择复审人员！", 2000);
+        return;
+    }
+    //约束条件(甲方提交复审校验)
+    if (pagerole == "Balance" && budgetparty == "甲方") {
+        if (role == "Muser" && state == "2") {
+            if ($("input[fieldproject='myh_usertype']:first").val() == "") {
+                top.$.ecity.dialog.message("项目用户类型不能为空！\n 请在项目其他信息中选择用户类型", 2000);
+                return;
+            }
+        }
+        if (role == "GSuser" && state == "2") {
+            if ($("input[fieldproject='constructionfee']:first").val() == "") {
+                top.$.ecity.dialog.message("项目建安费不能为空！\n 请在项目其他信息中填写建安费", 2000);
+                return;
+            }
+        }
+        if (role == "Szzy" && state == "2") {
+            //var $row = $("#gdmxb tr[id!='col']");
+            //if ($row.length == 0) {
+            //    top.$.ecity.dialog.message("主要管道工程量不能为空！\n 请填写管道工程量", 2000);
+            //    return;
+            //} else {
+            //    var type = $row.eq(0).find("td").eq(2).find("input").eq(0).combobox("getValue");
+            //    var diameter = $row.eq(0).find("td").eq(3).find("input").eq(0).combobox("getValue");
+            //    var length = $row.eq(0).find("td").eq(4).find("input").eq(0).val();
+            //    if (type == "" || diameter == "" || length == "") {
+            //        top.$.ecity.dialog.message("主要管道工程量数据不完整！\n 请完善数据", 2000);
+            //        return;
+            //    }
+            //}
+            if(pipleInfo.length == 0){//市政中压未编制管道明细不能提交
+               top.$.ecity.dialog.message("项目管道明细不能为空！\n 请在项目其他信息中编制管道明细", 2000);
+               return;
+            }
+        }
+        if (state == "1") {
+            //检查是否有变更没有复审通过
+            var isneedystz = false;
+            if (pagerole == "Balance") {
+                LoadMsgTipe("正在检查是否有变更核算没通过");
+                $.ajax({
+                    url: $.ecity.url(ennServiceUrl + "/isPassYSTZ?"),
+                    data: { proid: proid, unitid: unitid },
+                    type: "get",
+                    async: false,
+                    dataType: "json",
+                    success: function (res) {
+                        var result = typeof (res) == 'string' ? JSON.parse(res) : res;
+                        if (result.success) {
+                            isneedystz = result.isneedystz;
+                            HideMsgTipe();
+                        }
+                    },
+                    cache: false
+                });
+                if (isneedystz) {
+                    top.$.ecity.dialog.message("有变更核算复审没通过，无法进行提交操作", 1200);
+                    return;
+                }
+            }
+        }
+    }
+    //var zjyid = $("#cmbfsry").combobox("getValue");
+    //var zjyname = $("#cmbfsry").combobox("getText");
+    var sjmoney = getAllTotal('#infotab');
+    bgtype = (bgtype == "" || bgtype == null) ? 0 : bgtype;
+    /**if (budgettype == 1 || budgettype == 2 || budgettype == 5 || budgettype == 6) {
+        funid = "0";
+    }*/
+    var baseinfo = {
+        "gid": curobjgid, "type": budgettype, "protype": typename, "creater": userInfo.trueName,
+        "createrid": userInfo.id, "createtime": new Date().format("yyyy-MM-dd HH:mm:ss"),
+        "checkmoney": sjmoney, "funid": funid, "sgdwid": unitid, "sgdw": unitname, "state": state,
+        "flag": bgtype, "budgetparty": budgetparty
+    };
+    if (state == "2" && classAB == "A") {
+        baseinfo["checktype"] = checktype;
+    }
+    if (state == "2") {
+        $.each($("input[type='text'][field='flag']"), function (i, obj) {
+            $(obj).val("");
+        });
+    }
+    var baseinfo1 = {};
+    var detailList1 = "";
+    $.each($("[fieldname]"), function (index, value) {
+        value = $(value);
+        var fieldname = value.attr("fieldname");
+        var role1 = value.attr("role");
+        var val = "";
+        if (role1 == "combo") {
+            val = value.combobox('getText');
+        } else {
+            val = value.val();
+        }
+        if (fieldname != null) {
+            baseinfo[fieldname] = val;
+        }
+    });
+    if (pagerole == "Balance") {
+        baseinfo.flag = "2";
+        baseinfo1 = $.extend(true, {}, baseinfo);
+        baseinfo1.flag = "1";
+        baseinfo1.checktype = "";
+        if (tzobjgid == null || tzobjgid == "") {
+            curobjgid = tzobjgid = "";
+            baseinfo1.gid = tzobjgid;
+            baseinfo.gid = tzobjgid;
+        } else {
+            baseinfo.gid = tzobjgid;
+            baseinfo1.gid = curobjgid;
+        }
+        detailList1 = JSON.stringify(getdetail('#changetab'));
+        baseinfo1 = JSON.stringify(baseinfo1);
+    }
+    if (role == "Szzy") {
+        //市政中压管道明细移到其他信息页面--ym2017
+        //var pieinfos = [];
+        //var $row = $("#gdmxb tr[id!='col']");
+        //for (var i = 0; i < $row.length; i++) {
+        //    var gid = $row.eq(i).find("td").eq(0).find("input").eq(0).val();
+        //    var type = $row.eq(i).find("td").eq(2).find("input").eq(0).combobox("getValue");
+        //    var diameter = $row.eq(i).find("td").eq(3).find("input").eq(0).combobox("getValue");
+        //    var length = $row.eq(i).find("td").eq(4).find("input").eq(0).val();
+        //    var remark = $row.eq(i).find("td").eq(5).find("input").eq(0).val();
+        //    var obj = { "gid": gid, "proid": proid, "type": type, "diameter": diameter, "length": length, remark: remark };
+        //    pieinfos.push(obj);
+        //}
+        //baseinfo["pipes"] = pieinfos;
+    }
+    var detail = getdetail('#infotab');
+    var detailList = JSON.stringify(detail);
+    if (role == "Muser" && pagerole == "Budget") {
+        var b = true;
+        $.each(detail, function (index, value) {
+            if (value.controlway != null && value.controlway != "" && (value.usercount == null || value.usercount == "" || parseInt(value.usercount) == 0)) {
+                top.$.ecity.dialog.message("请输入户数", 1200);
+                b = false;
+                return false;
+            }
+        });
+        if (!b) { return; }
+    }
+    initMask2();
+    var commitfiles = JSON.stringify(files);
+    //特殊业务信息
+    var specialinfo={
+        "proid":proid,
+        "sgdwid": unitid,
+        "cbjsmoney":$("#cbjsmoney").val(),
+        "tzjsmoney":$("#tzjsmoney").val(),
+        "isspeacialinfo":$("#isspeacialinfo").combobox("getValue")
+    };
+    var content = {
+        proid: proid,
+        baseinfo: JSON.stringify(baseinfo),
+        detailList: detailList,
+        files: commitfiles,
+        zjyid: zjyid,
+        zjyname: zjyname,
+        type: roletype,
+        pagerole: pagerole,
+        detailList1: detailList1,
+        baseinfo1: baseinfo1,
+        specialinfo:JSON.stringify(specialinfo)
+    };
+    var method = (curobjgid == "" || curobjgid == null) ? "/addCostInfo?f=json" : "/updateCostInfo?f=json";
+    if (isrecheck == 1) {
+        method = "/addCostInfo?" + new Date() + "&f=json";
+    }
+    $.post($.ecity.url(ennServiceUrl + method), content, function (response) {
+        var res = JSON.parse(response);
+        if (res.success) {
+            writeLogSave("3");
+            top.$.ecity.dialog.message("保存成功", 1200);
+            top.publicmethod.saveColse = "1";
+            top.publicmethod.closeCurrTab();//成功关闭当前页面
+        }
+        else {
+           if(res.error.message == "请保存物料核销界面!"){
+              global_refreshPag = true;//此提示防止错误提交，刷新页面
+           }
+           top.$.ecity.dialog.message(res.error.message, 1200);//失败不关闭
+        }
+        removeMask2();
+        //top.publicmethod.saveColse = "1";
+        //top.publicmethod.closeCurrTab();
+    });
+}
+function saveBudgetInfo() {
+    var baseinfo = {};
+    $.each($("[fieldname]"), function (index, value) {
+        value = $(value);
+        var fieldname = value.attr("fieldname");
+        var role1 = value.attr("role");
+        var val = "";
+        if (role1 == "combo") {
+            val = value.combobox('getText');
+        } else {
+            val = value.val();
+        }
+        if (fieldname != null) {
+            baseinfo[fieldname] = val;
+        }
+    });
+    var sjfdetail = getdetail("#infotab");
+    var wbsdetail = [];
+    if (wbsInfoObj != null && wbsInfoObj.length > 0) {
+        $.each(wbsInfoObj, function (index, value) {
+            $.each(value.detail, function (i, v) {
+                v.proid = proid;
+                v.wbs = value.wbs;
+                wbsdetail.push(v);
+            });
+        });
+    }
+    //手输设计费
+    var editsjf = {};
+    $.each($("[fieldp]"), function (index, value) {
+        value = $(value);
+        var fieldname = value.attr("fieldp");
+        var val = value.val();
+        if (fieldname != null) {
+            editsjf[fieldname] = val;
+        }
+    });
+    baseinfo.editsjf = editsjf;
+    baseinfo.protype = typename;
+    var content = {
+        proid: proid,
+        baseinfo: JSON.stringify(baseinfo),
+        sjfdetail: JSON.stringify(sjfdetail),
+        wbsdetail: JSON.stringify(wbsdetail),
+        files: JSON.stringify(files)
+    };
+    initMask2();
+    $.post($.ecity.url(ennServiceUrl + "/addOrUpdateBudgetInfo?" + new Date() + "&f=json"), content, function (response) {
+        var res = JSON.parse(response);
+        if (res.success) {
+            top.$.ecity.dialog.message("保存成功", 1200);
+        }
+        else {
+            $.ecity.dialog.message(res, 1200);
+        }
+        removeMask2();
+        top.publicmethod.closeCurrTab();
+    });
+}
+function initCommonBox() {
+    $("#myh_WBS").combobox({
+        valueField: 'id',
+        textField: 'name',
+        height: 24,
+        panelHeight: 'auto',
+        editable: false,
+        data: Utility.MYHWBS
+    });
+    $("#gsh_WBS").combobox({
+        valueField: 'id',
+        textField: 'name',
+        height: 24,
+        panelHeight: 'auto',
+        editable: false,
+        data: Utility.GSWWBS
+    });
+    $("input[fieldname='myh_usertype']").combobox({
+        valueField: 'id',
+        textField: 'name',
+        height: 24,
+        panelHeight: 'auto',
+        editable: false,
+        data: Utility.UserType
+    });
+    $("input[fieldname='myh_content']").combobox({
+        valueField: 'id',
+        textField: 'name',
+        height: 24,
+        panelHeight: 'auto',
+        editable: false,
+        data: Utility.BHContent
+    });
+    $("input[fieldname='myh_gbway']").combobox({
+        valueField: 'id',
+        textField: 'name',
+        height: 24,
+        panelHeight: 'auto',
+        editable: false,
+        data: Utility.InstallationMode
+    });
+    $("input[field='controlway']").each(function (i, obj) {
+        var newObject = $.map(Utility.ControlMode, function (obj) {
+            return $.extend(true, {}, obj);//返回对象的深拷贝
+        });
+        $(obj).combobox({
+            valueField: 'id',
+            textField: 'name',
+            height: 24,
+            panelHeight: 'auto',
+            editable: false,
+            onChange: function (n, o) {//2016-8-30
+                var curobj = $(this);
+                var oldvalue = curobj.attr('oldval');
+                var vid = curobj.parent().parent().find("input[field='vid']").eq(0).attr('text');
+                if (pagerole == "Balance" || pagerole == "Adjust") {
+                    var addjj = !(n == "0");
+                    var col = curobj.attr("col");
+                    var row = curobj.attr("row");
+                    $("#changetab input[role='combo'][col='" + col + "'][row='" + row + "']").combobox("setText", n == "0" ? "" : n);
+                    if (addjj && isloaded) {
+                        curobj.parent().parent().find("input[field='flag']").eq(0).val("1");
+                        $("#changetab input[role='combo'][col='" + col + "'][row='" + row + "']").eq(0).parent().parent().find("input[field='flag']").eq(0).val("1");
+                    }
+                }
+                if (o == "" || o == 0 || n == o || oldvalue == n || vid == "" || vid == null || pagedetail == "detail") {
+                    return;
+                }
+                $.ecity.dialog.confirm('切换计价方式之后之前编制的数据会全部清空，是否继续切换？', function (dlg) {
+                    curobj.attr('oldval', n);
+                    curobj.parent().parent().find("input[role='wb'],input[field='vid'],input[field='pjz']").each(function (i, obj) {
+                        if ($(obj).attr('field') == "vid") {
+                            $(obj).attr('text', '');
+                        } else {
+                            $(obj).val('0.00');
+                            $(obj).trigger("keyup");
+                        }
+                    });
+                    dlg.close();
+                }, function (dlg) {
+                    curobj.attr('oldval', o);
+                    curobj.combobox('select', o);
+                    dlg.close();
+                });
+            },
+            data: newObject
+        }).combobox('select', "0");
+    });
+    $("input[field$='material']").each(function (i, obj) {
+        var newObject = $.map(Utility.MYHMaterial, function (obj) {
+            return $.extend(true, {}, obj);//返回对象的深拷贝
+        });
+        $(obj).combobox({
+            valueField: 'id',
+            textField: 'name',
+            height: 24,
+            panelHeight: 'auto',
+            editable: false,
+            data: newObject,
+            onChange:function(n,o){
+                var material = $(this);
+                var oldvalue = material.attr('oldval');
+                if (pagerole == "Balance") {
+                     var col = material.attr("col");
+                     var row = material.attr("row");
+                     $("#changetab input[role='combo'][col='" + col + "'][row='" + row + "']").combobox("setText", n == "0" ? "" : n);
+                }
+                if (o == "" || o == 0 || n == o || oldvalue == n || pagedetail == "detail") {
+                    return;
+                }
+            }
+        });
+    });
+    pageSpeciality();
+    pageControl();
+}
+function getAllTotal(tab) {
+    var i = $("" + tab + " [col^='*']").length;
+    id = "*" + (parseInt(i) - 2);
+    return $("" + tab + " [col='" + id + "']").val();
+}
+function initCombobox() {
+    var checker = "";
+    var checkerid = "";
+    $.ajax({
+        url: $.ecity.url(ennServiceUrl + "/getRechecker?"),
+        data: { proid: proid, unitid: unitid },
+        type: "get",
+        async: false,
+        dataType: "json",
+        success: function (res) {
+            var result = typeof (res) == 'string' ? JSON.parse(res) : res;
+            if (result.success) {
+                checker = result.checker;
+                checkerid = result.checkerid;
+            }
+        },
+        error: function (res) {
+            top.$.ecity.dialog.message('服务异常!', 2000);
+            console && console.log(res);
+        },
+        cache: false
+    });
+    $.ajax({
+        url: $.ecity.url(ennServiceMainUrl + "/getRoleUsers?1=1"),
+        data: {
+            keys: "zjgly,zjzgld",
+            ecode: userInfo.ecode
+        },
+        type: "get",
+        async: false,
+        dataType: "json",
+        success: function (res) {
+            var result = typeof (res) == 'string' ? JSON.parse(res) : res;
+            if (result.success) {
+                if (result.items.length == 0) {
+                    return;
+                }
+                var zjy = [];
+                var defaultzjyid = "";
+                for (var i = 0; i < result.items.length; i++) {
+                    var item = result.items[i];
+                    for (var j = 0; j < item.children.length; j++) {
+                        var c = item.children[j];
+                        /**if (item.code == "zjzgld" && j == 0 && checkerid == null) {
+                            defaultzjyid = c.id;
+                        }*/
+                        var obj = { id: c.id, text: c.text, code: c.code };
+                        if(item.code == "zjzgld"){
+                            if (zjy.indexOfid(obj.id) == -1) {
+                                zjy.push(obj);
+                            }
+                        }
+                    }
+                }
+                zjy.removebyid(userInfo.id);
+                if (zjy.length > 0) {
+                    //默认值
+                    defaultzjyid = zjy[0].id;
+                    $("#cmbfsry").combobox({
+                        valueField: 'id',
+                        textField: 'text',
+                        editable: false,
+                        panelHeight: 'auto',
+                        data: zjy || [],
+                        onSelect: function (r) {
+                            roletype = r.code;
+                        }
+                    });
+                    if (checkerid == null || checkerid == "") {
+                        $("#cmbfsry").combobox("select", defaultzjyid);
+                    } else {
+                        var globalId = defaultzjyid;//默认选择第一个
+                        for(var i=0;i<zjy.length;i++){
+                           if(checkerid == zjy[i].id){//已选过的造价主管领导存在可选列表中
+                               globalId = checkerid;//默认选择已选过的
+                           }
+                        }
+                        $("#cmbfsry").combobox("select", globalId);
+                    }
+                }
+            } else {
+                top.$.ecity.dialog.message('数据获取失败!', 2000);
+            }
+        },
+        cache: false
+    });
+}
+function getdetail(tab) {
+    var result = [];
+    $.each($("" + tab + " [field='wbs']"), function (index, value) {
+        value = $(value);
+        var detail = {};
+        detail['proid'] = proid;
+        detail['wbs'] = value.text().replace("+", "").replace("-", "");
+        $.each(value.parent().find('input'), function (indexc, valuec) {
+            valuec = $(valuec);
+            var field = valuec.attr("field");
+            var role1 = valuec.attr("role");
+            var val = "";
+            if (role1 == "combo") {
+                val = valuec.combobox('getText');
+            } else {
+                if (valuec.attr('field') == "vid") {
+                    val = valuec.attr("text");
+                } else {
+                    val = valuec.val();
+                }
+            }
+            if (field != null) {
+                detail[field] = val;
+            }
+        });
+        result.push(detail);
+    });
+    return result;
+}
+function setdetail(detail, tab) {
+    $.each($("" + tab + " [field='wbs']"), function (index, value) {
+        value = $(value);
+        var wbs = value.text().replace("+", "").replace("-", "");
+        $.each(detail, function (indexd, valued) {
+            if (valued.wbs == wbs) {
+                var b = false;
+                $.each(value.parent().find('input'), function (indexc, valuec) {
+                    valuec = $(valuec);
+                    var field = valuec.attr("field");
+                    var role1 = valuec.attr("role");
+
+                     if (valuec.attr('field') == "beizhu") {
+                      valuec.val(valued[field]);
+                     }else{
+                    if (role1 == "combo") {
+                        if (pagerole != "Budget") {
+                            if (valuec.attr('usable') == "false" && (valued[field] == null || valued[field] == "")) {
+                                judgeComboDisabled($(valuec), true, true);
+                                b = true;
+                            }
+                        }
+                        valuec.combobox('select', valued[field]);
+                        valuec.attr('oldval', valued[field]);
+                    } else {
+                        if (field != null) {
+                            if (pagerole != "Budget") {
+                                if (b) {
+                                    judgeTextDisabled($(valuec), true, true);
+                                }
+                            }
+                            if (valued[field] != "0" && valued[field] != null) {
+                                if (valuec.attr('field') == "vid") {
+                                    valuec.attr("text",valued[field]);
+                                    if (pagerole == "Balance" && tab == "#infotab") {
+                                        $("#changetab [field='wbs']").each(function (i, obj) {
+                                            var wbsobj = $(obj);
+                                            var wbsname = wbsobj.text().replace("+", "").replace("-", "");
+                                            if (wbs == wbsname) {
+                                                wbsobj.parent().find("input[field='vid']").eq(0).text(valued[field]);
+                                                return false;
+                                            }
+                                        });
+                                        
+                                    }
+                                    return true;
+                                }
+                                if (!isNaN(parseFloat(valued[field]).toFixed(4))) {
+                                    if (valuec.attr('field') != "gid" && valuec.attr('field') != "usercount" && valuec.attr('field') != "vid" && valuec.attr('field') != "flag") {
+                                        valuec.val(unformatMoney(valued[field]).toFixed(4));
+                                    }
+                                    else {
+                                        valuec.val(unformatMoney(valued[field]));
+                                    }//数据保留两位小数
+                                }
+                            }
+                            if (pagerole == "Balance" && valued[field] != null) {
+                                valuec.attr("old", valued[field]);
+                            }
+                        }
+                    }}
+                });
+                return false;
+            }
+        });
+    });
+}
+function setChange(detail, tab) {
+    $.each($("" + tab + " [field='wbs']"), function (index, value) {
+        value = $(value);
+        var wbs = value.text().replace("+", "").replace("-", "");
+        $.each(detail, function (indexd, valued) {
+            if (valued.wbs == wbs) {
+                var b = false;
+                $.each(value.parent().find('input'), function (indexc, valuec) {
+                    valuec = $(valuec);
+                    var field = valuec.attr("field");
+                    var role1 = valuec.attr("role");
+                    if (role1 == "combo") {
+                    } else {
+                        valuec.attr("title", valued[field]);
+                        valuec.attr("old", valued[field]);
+                    }
+                });
+                return false;
+            }
+        });
+    });
+}
+function CreateProcessDiv(json) {
+    var divHTML = "";
+    var divArrow = "<div class=\"arrow\"></div>";
+    var one, tow, three, title, oneV, towV, threeV, oneT, oneC, rechecker;
+    var bidA = [];
+    var pagetype = "";
+    switch (pagerole) {
+        case "Balance":
+            pagetype = "5";
+            title = "工程结算";
+            one = "结算金额:";
+            tow = "结算人:";
+            three = "结算时间:";
+            break;
+        case "Budget":
+            pagetype = "1";
+            title = "预算编制";
+            one = "编制金额:";
+            tow = "编制人:";
+            three = "编制时间:";
+            break;
+        case "Adjust":
+            pagetype = "3";
+            title = "预算调整";
+            one = "变更/签证金额:";
+            tow = "调整人:";
+            three = "调整时间:";
+            break;
+    }
+    $.each(json.items, function (index, value) {
+        if (jQuery.inArray(value.bid, bidA) < 0) {
+            bidA.push(value.bid);
+        }
+        oneV = value.money + "元";
+        towV = value.creater;
+        threeV = value.createtime;
+        rechecker = "";
+        oneC = "DivFrame-Process";
+        if (index == 0) {
+            oneT = value.type;
+            if (value.type == pagetype) {
+            } else {
+                title = "初审";
+                one = "初审金额:";
+                tow = "初审人:";
+                three = "初审时间:";
+                rechecker = value.rechecker;
+            }
+        } else if (index == 1) {
+            if (oneT == pagetype) {
+                if(value.reason != null){
+                 title = "初审";
+                 one = "审核意见:";
+                 tow = "审核人:";
+                 three = "审核时间:";
+                 oneV = value.reason;
+                 if (value.fileurl != null) {
+                     oneV = "<a href=\"javascript:void(0);\" title=\"下载附件\" params=\"" + value.fileurl + "," + urlpath + "," + value.filename + "\" onclick=\"lookfiles(this)\">" + value.reason + "</a>";
+                 }
+                 towV = value.checker;
+                }else{
+                    title = "初审";
+                    one = "初审金额:";
+                    tow = "初审人:";
+                    three = "初审时间:";
+                    rechecker = value.rechecker;
+                }
+            } else {
+                if (value.reason != null) {
+                    title = "复审";
+                    one = "审核意见:";
+                    tow = "审核人:";
+                    three = "审核时间:";
+                    oneV = value.reason;
+                    if (value.fileurl != null) {
+                        oneV = "<a href=\"javascript:void(0);\" title=\"下载附件\" params=\"" + value.fileurl + "," + urlpath + "," + value.filename + "\" onclick=\"lookfiles(this)\">" + value.reason + "</a>";
+                    }
+                    towV = value.checker;
+                } else {
+                    title = "再次送审";
+                    one = "送审金额:";
+                    tow = "送审人:";
+                    three = "送审时间:";
+                }
+            }
+        } else {
+            if(value.type == pagetype){
+                if(value.reason != null){
+                    title = "初审";
+                    one = "审核意见:";
+                    tow = "审核人:";
+                    three = "审核时间:";
+                    oneV = value.reason;
+                    if (value.fileurl != null) {
+                        oneV = "<a href=\"javascript:void(0);\" title=\"下载附件\" params=\"" + value.fileurl + "," + urlpath + "," + value.filename + "\" onclick=\"lookfiles(this)\">" + value.reason + "</a>";
+                    }
+                    towV = value.checker;
+                }else{
+                    title = "再次送审";
+                    one = "送审金额:";
+                    tow = "送审人:";
+                    three = "送审时间:";
+                }
+            }else{
+                if (value.reason != null) {
+                   if(json.items[index-1].type == pagetype){
+                        title = "初审";
+                        one = "审核意见:";
+                        tow = "审核人:";
+                        three = "审核时间:";
+                        oneV = value.reason;
+                        if (value.fileurl != null) {
+                            oneV = "<a href=\"javascript:void(0);\" title=\"下载附件\" params=\"" + value.fileurl + "," + urlpath + "," + value.filename + "\" onclick=\"lookfiles(this)\">" + value.reason + "</a>";
+                        }
+                        towV = value.checker;
+                   }else{
+                        title = "复审";
+                        one = "审核意见:";
+                        tow = "审核人:";
+                        three = "审核时间:";
+                        oneV = value.reason;
+                        if (value.fileurl != null) {
+                           oneV = "<a href=\"javascript:void(0);\" title=\"下载附件\" params=\"" + value.fileurl + "," + urlpath + "," + value.filename + "\" onclick=\"lookfiles(this)\">" + value.reason + "</a>";
+                        }
+                           towV = value.checker;
+                   }
+                } else {
+                    if(json.items[index-1].type == pagetype){
+                        title = "初审";
+                        one = "初审金额:";
+                        tow = "初审人:";
+                        three = "初审时间:";
+                          rechecker = value.rechecker;
+                    }else{
+                        title = "再次送审";
+                        one = "送审金额:";
+                        tow = "送审人:";
+                       three = "送审时间:";
+                    }
+                }
+            }
+        }
+        if (index == json.items.length - 1) {
+            oneC = "DivFrame-Process DivFrame-ProcessClick";
+        }
+        divHTML += "<div id=\"div_" + index + "\" index=\"" + index + "\" class=\"" + oneC + "\">";
+        divHTML += "<table class=\"DivFrame-Table\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\">";
+        divHTML += "<tr>";
+        divHTML += "<td colspan=\"2\" class=\"DTable-Title\">" + title + "</td>";
+        divHTML += "</tr>";
+        divHTML += "<tr>";
+        divHTML += "<td class=\"DTable-TL\">" + one + "</td>";
+        divHTML += "<td class=\"DTable-TR\">" + oneV + "</td>";
+        divHTML += "</tr>";
+        divHTML += "<tr>";
+        divHTML += "<td class=\"DTable-TL\">" + tow + "</td>";
+        divHTML += "<td class=\"DTable-TR\">" + towV + "</td>";
+        divHTML += "</tr>";
+        if (rechecker != ""&&rechecker!=null) {
+            divHTML += "<tr>";
+            divHTML += "<td class=\"DTable-TL\">审核人:</td>";
+            divHTML += "<td class=\"DTable-TR\">" + rechecker + "</td>";
+            divHTML += "</tr>";
+        }
+        divHTML += "<tr>";
+        divHTML += "<td class=\"DTable-TL\">" + three + "</td>";
+        divHTML += "<td class=\"DTable-TR\">" + threeV + "</td>";
+        divHTML += "</tr>";
+        divHTML += "</table>";
+        divHTML += "</div>";
+        if (json.items.length - 1 > index) {
+            divHTML += divArrow;
+        }
+        else {
+        }
+    });
+    $("#DivFrame-Length").html(divHTML);
+    $.each($("div[id^='div_']"), function (index, value) {
+        value = $(value);
+        value.click(function () {
+            var i = parseInt($(this).attr("index"));
+            ProcessClick($(this), json.items[i]);
+        });
+    });
+    $("#div_" + (json.items.length - 1)).click();
+}
+function lookfiles(obj) {
+    downfile($(obj).attr('params'));
+}
+function ProcessClick(mode, json) {
+    clearDetail();
+    $(mode).addClass('DivFrame-ProcessClick').siblings().removeClass('DivFrame-ProcessClick');
+    //加载预算编制信息
+    var condition = {};
+    condition['proid'] = json.proid;
+    condition['type'] = json.type;
+    condition['funid'] = funid;
+    condition['unitid'] = unitid;
+    condition['pagerole'] = pagerole;
+    condition['bid'] = json.bid;
+    condition['classAB'] = classAB;
+    queryData(condition);
+}
+function getSingleCostInfo() {
+    $.ajax({
+        url: $.ecity.url(ennServiceUrl + "/getSingleCostInfo?f=json"),
+        type: "get",
+        data: {
+            "proid": proid,
+            "unitid": unitid,
+            "funid": funid,
+            "pagerole": pagerole,
+            "role": role
+        },
+        dataType: "json",
+        async: false,
+        success: function (result) {
+            if (result.success) {
+                urlpath = result.url;
+                CreateProcessDiv(result);
+            } else {
+                $("#DivFrame-Length").html("");
+            }
+        },
+        error: function (response, option) {
+            alert("获取数据失败!");
+        },
+        cache: false
+    });
+}
+function clearDetail() {
+    $("input[type='text'][setvalue!='false']").val("");
+}
+function pageControl() {
+    var str = "";
+    switch (classAB) {
+        case "A":
+            str = "A+";
+            $("[show*='A!']").css("display", "");
+            break;
+        case "B":
+            str = "B+";
+            $("[show*='B!']").css("display", "");
+            break;
+    }
+    switch (pagerole) {
+        case "Balance":
+            str += ",Balance+";
+            checktype = 3;
+            createTableBalance();
+            if (classAB == "A") {
+                budgettype = 6;
+            } else {
+                budgettype = 5;
+            }
+            $("[show*='Balance!']").css("display", "");
+            if (budgettype == 5) {
+                //$("#wlhx").css("display", "none");
+            }
+            break;
+        case "Budget":
+            str += ",Budget+";
+            checktype = 1;
+            //if (pagedetail == "detail") {
+            //    createTableBudgetDetail();
+            //} else {
+            //    if (classAB == "A") {
+            //        createTableBudgetA();
+            //    } else {
+            //        createTableBudgetB();
+            //    }
+            //}
+            if (classAB == "A") {
+                budgettype = 2;
+            } else {
+                budgettype = 1;
+            }
+            $("[show*='Budget!']").css("display", "");
+            break;
+        case "Adjust":
+            str += ",Adjust+";
+            checktype = 2;
+            createTableAdjust();
+            if (classAB == "A") {
+                budgettype = 4;
+            } else {
+                budgettype = 3;
+            }
+            $("[show*='Adjust!']").css("display", "");
+            break;
+    }
+    var qt = $.ecity.getPageParam('qt');
+    if (qt == ""&&flag=="") {
+        var condition = {};
+        condition['proid'] = proid;
+        condition['type'] = budgettype;
+        condition['funid'] = funid;
+        condition['unitid'] = unitid;
+        condition['pagerole'] = pagerole;
+        condition['classAB'] = classAB;
+        $.ajax({
+            url: $.ecity.url(ennServiceUrl + "/getCostInfo?" + new Date()),
+            data: condition,
+            type: "get",
+            async: false,
+            dataType: "json",
+            success: function (res) {
+                var result = typeof (res) == 'string' ? JSON.parse(res) : res;
+                if (result.success) {
+                    if (result["A"] != null && result["A"].state == 2) {
+                        pagedetail = "detail";
+                    }
+                }
+            },
+            cache: false
+        });
+    }
+    if (pagerole == "Budget") {
+        if (pagedetail == "detail") {
+            createTableBudgetDetail();
+        } else {
+            if (classAB == "A") {
+                createTableBudgetA();
+            } else {
+                createTableBudgetB();
+            }
+        }
+    }
+    if (pagedetail == "detail") {
+        $("[show='btn!']").css("display", "none");
+        $("[show*='detail!']").css("display", "");
+        $("[show*='A!,detail!']").css("display", "none");
+        $("[show*='detail+']").css("display", "none");
+        //加载结算单模板选项
+        var html = '<div id="mm1" style="width: 100px;">';
+        $.each(Utility.BalanceTemplates, function (i, obj) {
+            html += '<div onclick="printBalanceSheet(\'' + obj.name + '\')">' + obj.value + '</div>';
+        });
+        html += '</div>';
+        $("body").append(html);
+        $("#printtable").menubutton({ menu: '#mm1' });
+    }
+    if (flag == "audit") {
+        $("[show*='A!']").css("display", "none");
+        $("[show='audit!']").css("display", "");
+    }
+    if (pagerole == "Balance") {
+        //$("#divsaveTemplate").css("display", "none");
+        disableTabFalse();
+    }
+    judgeComboDisabled($("[classAB='" + classAB + "'][role='combo']"), true, true);
+    judgeTextDisabled($("input[type='text'][classAB='" + classAB + "']"), true, true);
+    if (pagedetail == "detail" || flag == "audit") {
+        judgeTextDisabled($("input[type='text']"), true, true);
+        judgeComboDisabled($("input[role='combo']"), true, true);
+    }
+    $("[show='" + str + "']").css("display", "");
+    //if (pagerole == "Balance") {
+    //    loadValuation($("#changetab"));
+    //} else {
+    //    loadValuation($("#infotab"));
+    //}
+    loadValuation($("#infotab"));
+}
+function createTableBalance() {
+    var table = '<table class="altrowstable" style="height: 240px">';
+    table += '<tr style="background-color: #41C7DB">';
+    table += '<th style="width: 40px">费用</th>';
+    table += '<th style="width: 80px"><a href="javascript:void(0);" onclick="goDetail(1)">预算金额(元)</a></th>';
+    table += '<th style="width: 80px"><a href="javascript:void(0);" onclick="goDetail(2)">调整金额(元)</a></th>';
+    table += '<th style="width: 80px">结算调整(元)</th>';
+    table += '<th style="width: 90px">结算金额(元)</th>';
+    table += '</tr>';
+    table += '<tr style="background-color: #EEEEEE">';
+    table += '<td>材料费</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr>';
+    table += '<td>施工费</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr style="background-color: #EEEEEE;display:none;">';
+    table += '<td>其他费</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr>';
+    table += '<td>总计</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '</table>';
+    $(table).appendTo($("#left"));
+}
+function goDetail(param) {
+    switch (param) {
+        case 1:
+            var parameter = "?pagedetail=detail&pagerole=Budget&typename=" + typename + "&proid=" + proid + "&unitid=" + unitid + "&unitname=" + unitname + "";
+            switch (role) {
+                case "GSuser":
+                    tab = top.publicmethod.addTab("编制详情-工商户", 'module/Budgeting/MergePage/GSuser/GSuserPage.html' + parameter, true, "编制详情-工商户", true);
+                    break;
+                case "Muser":
+                    tab = top.publicmethod.addTab("编制详情-民用户", 'module/Budgeting/MergePage/Muser/MuserPage.html' + parameter, true, "编制详情-民用户", true);
+                    break;
+                case "Szzy":
+                    tab = top.publicmethod.addTab("编制详情-市政中压", 'module/Budgeting/MergePage/Szzy/SzzyPage.html' + parameter, true, "编制详情-市政中压", true);
+                    break;
+            }
+            break;
+        case 2:
+            var name = $("input[type='text'][fieldproject='name']").eq(0).val();
+            var code = $("input[type='text'][fieldproject='code']").eq(0).val();
+            var parameter = "?pagedetail=detail&pagerole=Adjust&typename=" + typename + "&proid=" + proid + "&code=" + code + "&name=" + encodeURIComponent(name);
+            var url = "module/Budgeting/AdjustPage/budgetAdjustlist2.html";
+            if (budgetparty == "乙方") {
+                url = "module/Budgeting/AdjustPage/budgetAdjustlistS2.html";
+            }
+            top.publicmethod.addTab("预算变更列表", url + parameter, true);
+            break;
+    }
+}
+function createTableAdjust() {
+    var table = '<table class="altrowstable" style="height: 240px">';
+    table += '<tr style="background-color: #41C7DB">';
+    table += '<th style="width: 60px">费用</th>';
+    table += '<th style="width: 120px">变更/签证金额(元)</th>';
+    table += '</tr>';
+    table += '<tr style="background-color: #EEEEEE">';
+    table += '<td>材料费</td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr>';
+    table += '<td>施工费</td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr style="background-color: #EEEEEE;display:none;">';
+    table += '<td>其他费</td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr>';
+    table += '<td>总计</td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '</table>';
+    $(table).appendTo($("#left"));
+}
+function createTableBudgetA() {
+    var table = '<table class="altrowstable" style="height: 240px">';
+    table += '<tr style="background-color: #41C7DB">';
+    table += '<th style="width: 40px">费用</th>';
+    table += '<th>初始金额(元)</th>';
+    table += '<th>初审金额(元)</th>';
+    table += '</tr>';
+    table += '<tr style="background-color: #EEEEEE">';
+    table += '<td>材料费</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr>';
+    table += '<td>施工费</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr style="background-color: #EEEEEE;display:none;">';
+    table += '<td>其他费</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr>';
+    table += '<td>总计</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '</table>';
+    $(table).appendTo($("#left"));
+}
+function createTableBudgetB() {
+    var table = '<table class="altrowstable" style="height: 240px">';
+    table += '<tr style="background-color: #41C7DB">';
+    table += '<th>费用</th>';
+    table += '<th>初始金额(元)</th>';
+    table += '</tr>';
+    table += '<tr style="background-color: #EEEEEE">';
+    table += '<td>材料费</td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr>';
+    table += '<td>施工费</td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr style="background-color: #EEEEEE;display:none;">';
+    table += '<td>其他费</td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr>';
+    table += '<td>总计</td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '</table>';
+    $(table).appendTo($("#left"));
+}
+function createTableBudgetDetail() {
+    var table = '<table class="altrowstable" style="height: 240px">';
+    table += '<tr style="background-color: #41C7DB">';
+    table += '<th style="width: 40px">费用</th>';
+    table += '<th>初始金额(元)</th>';
+    table += '<th>初审金额(元)</th>';
+    table += '<th>复审金额(元)</th>';
+    table += '</tr>';
+    table += '<tr style="background-color: #EEEEEE">';
+    table += '<td>材料费</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr>';
+    table += '<td>施工费</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr style="background-color: #EEEEEE;display:none;">';
+    table += '<td>其他费</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr>';
+    table += '<td>总计</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '</table>';
+    $(table).appendTo($("#left"));
+}
+function createTableBudgetInfoDetail() {
+    var table = '<table class="altrowstable" style="height: 240px">';
+    table += '<tr style="background-color: #41C7DB">';
+    table += '<th style="width: 40px">费用</th>';
+    table += '<th><a href="javascript:void(0);">预算金额(元)</a></th>';
+    table += '<th><a href="javascript:void(0);">调整金额(元)</a></th>';
+    table += '<th>结算调整(元)</th>';
+    table += '<th><a href="javascript:void(0);">结算金额(元)</a></th>';
+    table += '</tr>';
+    table += '<tr style="background-color: #EEEEEE">';
+    table += '<td>材料费</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr>';
+    table += '<td>施工费</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<tr style="background-color: #EEEEEE;display:none;">';
+    table += '<td>其他费</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '<td>总计</td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '<td></td>';
+    table += '</tr>';
+    table += '</table>';
+    $(table).appendTo($("#left"));
+}
+function queryTableCost(bid) {
+    var condition = {};
+    condition['proid'] = proid;
+    condition['type'] = budgettype;
+    condition['funid'] = funid;
+    condition['unitid'] = unitid;
+    condition['pagerole'] = pagerole;
+    condition['role'] = role;
+    condition['bgtype'] = bgtype;
+    condition['classAB'] = classAB;
+    condition['pagedetail'] = pagedetail;
+    condition['bid'] = bid;
+    $.get($.ecity.url(ennServiceUrl + "/getBudgetTable?" + new Date()), condition, function (res) {
+        var rest = ($.type("res") === "string") ? JSON.parse(res) : res;
+        if (rest.success) {
+            bindTableCost(rest.data);
+        }
+    });
+}
+function bindTableCost(data) {
+    if (data == null || data.length <= 0) return;
+    var tablecost = $("#left").find('table');
+    $.each(tablecost.find("tr").find("td"), function (indexc, valuec) {
+        valuec = $(valuec);
+        if (indexc != 0) {
+            var datarow = data[indexc - 1];
+            $.each(tablecost.find("tr").find("td:eq(" + indexc + ")"), function (index, value) {
+                var s = "", str = "";
+                if (index == 0) {
+                    s = "cl";
+                } else if (index == 1) {
+                    s = "sg";
+                } else if (index == 2) {
+                    s = "qt";
+                } else {
+                    s = "cost";
+                    if (datarow == null || datarow[s] == null) {
+                        s = "total";
+                    }
+                }
+                if (datarow != null && datarow[s] != null) {
+                    str = datarow[s];
+                }
+                value = $(value);
+                value.text(pFloat(parseFloat(str)).toFixed(4));
+            });
+        }
+    });
+}
+
+function printBalanceSheet(tempalte) {
+    var getExcelFileUrl = top.$.ecity.frame.sysCfg.data.servicecfg["GetExcelFile"];
+    var getReportList = top.$.ecity.frame.sysCfg.data.servicecfg["GetValidReportList"];
+
+    var rname = "结算表单";
+    if (role == "Muser") {
+        rname = "民用户结算表单.xls";
+        if (tempalte != '') {
+            rname = "民用户结算表单-" + tempalte + ".xls";
+        }
+        LoadMsgTipe("正在导出工程结算单...");
+        $.ajax({
+            url: $.ecity.url(ennServiceUrl + "/ExportMuserJSBill?"),
+            data: { proid: proid, sgdwid: unitid, templatename: rname },
+            type: "POST",
+            async: true,
+            dataType: "json",
+            success: function (res) {
+                var result = typeof (res) == 'string' ? JSON.parse(res) : res;
+                if (result.success) {
+                    if (result.url == "" || result.url == null) {
+                        HideMsgTipe();
+                        top.$.ecity.dialog.message("暂无数据", 1200);
+                        return;
+                    }
+                    HideMsgTipe();
+                    //location.href = result.url;
+                    $.ecity.postWin.post(outputServer + "/download", "_self", { url: result.url, filename: result.filename });
+                }
+            },
+            cache: false
+        });
+        return;
+    }
+    if (role == "GSuser") {
+        rname = "工商户结算表单";
+        if (tempalte != '') {
+            rname = "工商户结算表单-" + tempalte;
+        }
+    }
+    if (role == "Szzy") {
+        rname = "市政中压结算表单";
+        if (tempalte != '') {
+            rname = "市政中压结算表单-" + tempalte;
+        }
+    }
+    LoadMsgTipe("正在导出工程结算单...");
+    var getReportId = function (name, callback) {
+        var reportId;
+        var reportList = [];
+        $.ajax({
+            url: $.ecity.url(getReportList + "?keys=&values=&f=json"),
+            cache: false,
+            dataType: 'json',
+            crossDomain: true,
+            success: function (result) {
+                if (!result) {
+                    alert('获取列表失败');
+                    HideMsgTipe();
+                    return;
+                }
+                reportList = result.reportList;
+                for (var m = 0; m < reportList.length; m++) {
+                    if (name == reportList[m].name) {
+                        reportId = reportList[m].id;
+                        break;
+                    }
+                }
+                callback(reportId);
+            },
+            error: function (e) {
+                HideMsgTipe();
+                top.$.ecity.dialog.message("抱歉:导出报表出错,请稍后再试!", 2000);
+            }
+        });
+
+    };
+
+    getReportId(rname, function (indexid) {
+        $.ajax({
+            url: $.ecity.url(getExcelFileUrl + "?reportIndex=" + indexid + "&keys=1,2" + "&values=" + proid + "," + unitid),
+            cache: false,
+            dataType: 'json',
+            crossDomain: true,
+            success: function (result) {
+
+                console && console.log(result);
+                HideMsgTipe();
+                var url = result.url;
+                var filename = rname.split('-');
+                $.ecity.postWin.post(outputServer + "/download", "_self", { url: url, filename: filename[0] });
+            },
+            error: function (e) {
+                HideMsgTipe();
+                top.$.ecity.dialog.message("抱歉:导出报表出错,请稍后再试!", 2000);
+            }
+        });
+    });
+
+}
+
+function initMask2(id, isTree, tag) {
+    var msgs = "";
+    var objWidth = 0;
+    var obj = null;
+    if (id == null) {
+        obj = $("body");
+    } else {
+        obj = $("#" + id);
+    }
+    var maskId = "";
+    if (tag != null) {
+        maskId = "id=\"mask_" + tag + "\"";
+    }
+    $("<div " + maskId + " class=\"table-mask2\" style=\"display:block\"></div>").appendTo(obj);
+    if (isTree == undefined || isTree == "") {
+        msgs = "正在加载数据，请稍后......";
+        objWidth = obj.width() - 200;
+    }
+    else {
+        msgs = "数据加载中......";
+        objWidth = obj.width() - 50;
+    }
+    if (tag != null) {
+        maskId = "id=\"mask_msg_" + tag + "\"";
+    }
+    var msg = $("<div " + maskId + " class=\"table-mask-msg2\" style=\"display:block\"></div>").html(msgs).appendTo(obj);
+
+    msg.css("left", objWidth / 2);
+}
+
+//移除遮罩层
+//id:遮罩层id
+function removeMask2(id, tag) {
+    var obj = null;
+    if (id == null) {
+        obj = $("body");
+    } else {
+        obj = $("#" + id);
+    }
+    if (tag != null) {
+        obj.children("#mask_" + tag + "").remove();
+        obj.children("#mask_msg_" + tag + "").remove();
+    } else {
+        obj.children("div.table-mask-msg2").remove();
+        obj.children("div.table-mask2").remove();
+    }
+}
+
+
+function writeLogSave(state) {
+    var objName = "", toolid = "", stateName = "", tailname = "";
+    switch (classAB) {
+        case "A":
+            objName = "甲方";
+            break;
+        case "B":
+            objName = "乙方";
+            break;
+    }
+    switch (state) {
+        case "1":
+            stateName = "保存";
+            break;
+        case "2":
+            stateName = "提交";
+            break;
+        case "3":
+            stateName = "审核通过";
+            break;
+        case "4":
+            stateName = "驳回";
+            break;
+        case "5":
+            stateName = "上传了";
+            tailname = "文档";
+            break;
+        case "6":
+            stateName = "删除了";
+            tailname = "文档";
+            break;
+        case "7":
+            stateName = "保存了模板";
+            break;
+        case "8":
+            stateName = "更新了模板";
+            break;
+    }
+    switch (pagerole) {
+        case "Balance":
+            switch (classAB) {
+                case "A":
+                    toolid = "PROSETTLE_A";
+                    break;
+                case "B":
+                    toolid = "PROSETTLE_B";
+                    break;
+            }
+            top.$.ecity.log.addOperLog(toolid, objName + "用户" + userInfo.trueName + stateName + "工程结算" + tailname);
+            break;
+        case "Budget":
+            switch (classAB) {
+                case "A":
+                    toolid = "BudgetAudit_A";
+                    break;
+                case "B":
+                    toolid = "BudgetAudit_B";
+                    break;
+            }
+            top.$.ecity.log.addOperLog(toolid, objName + "用户" + userInfo.trueName + stateName + "预算编制" + tailname);
+            break;
+        case "Adjust":
+            switch (classAB) {
+                case "A":
+                    toolid = "BGHS_A";
+                    break;
+                case "B":
+                    toolid = "BGHS_B";
+                    break;
+            }
+            top.$.ecity.log.addOperLog(toolid, objName + "用户" + userInfo.trueName + stateName + "预算调整" + tailname);
+            break;
+    }
+}
+function writeLogValuation(type) {
+    var toolid = "VALUATE_STAND", stateName = "", tailname = "";
+    switch (type) {
+        case 1:
+            stateName = "工程总承包";
+            break;
+        case 2:
+            stateName = "施工费包干";
+            break;
+        case 3:
+            stateName = "清单计价";
+            break;
+    }
+    top.$.ecity.log.addOperLog(toolid, "用户" + userInfo.trueName + stateName + "计价标准导入" + tailname);
+}
+//***********************************************************************datagrid
+var colInfo = [];
+function createChartEmpty(id) {
+    var model = $("#" + id);
+    var idchart = id + "_chart";
+    var chartHtml = "<div id=\"" + idchart + "\" class=\"divChart\"></div>";
+    $("#" + idchart).remove();
+    $(chartHtml).appendTo(model);
+    return $("#" + idchart);
+}
+function createTableEmpty(id, width, height, columns, Edit, toolbar, pagination, addRowsIco) {
+    var model = $("#" + id);
+    var iddgv = id + "_dgv";
+    var tableHtml = "<table id=\"" + iddgv + "\" class=\"easyui-datagrid\"></table>";
+    $(tableHtml).appendTo(model);
+    var dgv = $("#" + iddgv);
+    var dgvColumns = getColumns(columns);
+    colInfo.push({ id: iddgv, columns: dgvColumns });
+    initialGrid(dgv, height, columns, Edit, toolbar, pagination);
+    if (addRowsIco) {
+        var divHtml = '<div class="divPlus" pid="' + iddgv + '"></div>';
+        $(divHtml).appendTo("#" + id + " .datagrid-header-inner");
+        $(".divPlus").css('left', width - 21);
+        $(".divPlus").on('click', function () {
+            var data = columnsToRowData(getColumnsInfo($(this).attr("pid")));
+            if (data != null) {
+                endAllEdit($("#" + iddgv));
+                addRows($("#" + iddgv), data);
+            } else { }
+        });
+    }
+    return $("#" + iddgv);
+}
+function columnsToRowData(col) {
+    if (col == null || col.length <= 0) return null;
+    var rowData = {};
+    $.each(col, function (index, value) {
+        if (value.field == "gid" && (rowData[value.field] == null || rowData[value.field] == "")) {
+            rowData[value.field] = guid();
+        } else {
+            rowData[value.field] = "";
+        }
+    });
+    return rowData;
+}
+function getColumnsInfo(id) {
+    if (colInfo == null || colInfo.length <= 0) return null;
+    var data = null;
+    $.each(colInfo, function (index, value) {
+        if (value.id == id) {
+            data = value.columns;
+            return false;
+        }
+    });
+    return data;
+}
+function initialGrid(model, height, columns, Edit, toolbar, pagination) {
+    var dgvColumns = getColumns(columns);
+    if (dgvColumns != null) {
+        model.datagrid({
+            columns: [dgvColumns]
+        });
+    }
+    model.datagrid({
+        title: "",
+        width: '100%',
+        height: height - 2,
+        noheader: true,
+        fitColumns: true,
+        border: true,
+        nowrap: true,
+        striped: true,
+        collapsible: false,
+        loadMsg: "",
+        pagination: false, //显示分页工具条
+        rownumbers: false, //显示行号
+        singleSelect: true,//只允许单行选择
+        selectOnCheck: true
+    });
+    if (Edit) {
+        model.datagrid({
+            rowStyler: function (index, row) {
+                if (row != null) {
+                    if (row.son) {
+                        return 'font-size:10pt;color:#1387D0;';
+                    }
+                    if (row.parent) {
+                        return "font-size:12pt;font-weight:bold;";
+                    }
+                }
+            },
+            onLoadSuccess: function (data) {
+            },
+            onBeforeEdit: function (index, row) {
+                if ($("#myh_WBS").length > 0 && $("#myh_WBS").combobox('getValue') == "0") {
+                    return false;
+                }
+                if ($("#gsh_WBS").length > 0 && $("#gsh_WBS").combobox('getValue') == "0") {
+                    return false;
+                }
+            },
+            onAfterEdit: function (index, row) {
+                row.cz = row.cz == "0" ? "" : row.cz;
+                row.gj = row.gj == "0" ? "" : row.gj;
+                $(this).datagrid('refreshRow', index);
+            },
+            onCancelEdit: function (index, row) {
+            },
+            onDblClickRow: function (index, row) {
+                //endAllEdit();
+            },
+            onClickRow: function (index, row) {
+                endAllEdit($(this));
+                $(this).datagrid('beginEdit', index);
+                addEditEvent($(this), index);
+            },
+            onClickCell: function (rowIndex, field, value) {
+            }
+        });
+    }
+    if (toolbar) {
+        model.datagrid({
+            toolbar: [{
+                text: '新增',
+                iconCls: 'icon-add',
+                handler: function (m) {
+                    if ($(m.target).attr("disabled") == "disabled") return false;
+                    var node = tree.getSelected();
+                    if (node == null) {
+                        $.ecity.dialog.message("请选择指标！", 2000);
+                        return false;
+                    }
+                    var data = columnsToRowData(getColumnsInfo($(this).attr("pid")));
+                    if (data != null) {
+                        endAllEdit($(this));
+                        addRows(data);
+                    } else { }
+                }
+            }, '-', {
+                text: '编辑',
+                iconCls: 'icon-edit',
+                handler: function (m) {
+                    if ($(m.target).attr("disabled") == "disabled") return false;
+                    var rows = model.datagrid("getSelections");
+                    if (rows.length == 1) {
+                        var index = model.datagrid("getRowIndex", rows[0]);
+                        model.datagrid("beginEdit", index);
+                    } else {
+                        $.ecity.dialog.message("请选择要编辑的行!", 2000);
+                    }
+                }
+            }, '-', {
+                text: '删除',
+                iconCls: 'icon-remove',
+                handler: function (m) {
+                    if ($(m.target).attr("disabled") == "disabled") return false;
+                    var data = model.datagrid('getSelected');
+                    if (data != null) {
+                        var index = model.datagrid('getRowIndex', data);
+                        if (index != -1) {
+                            model.datagrid('deleteRow', index);
+                        }
+                    } else {
+                        $.ecity.dialog.message("请选择要删除的行!", 2000);
+                    }
+                }
+            }]
+        });
+    }
+    if (pagination) {
+        $(model.datagrid('getPager')).pagination({
+            pageSize: pageSize,
+            pageList: [10, 20, 30, 40],
+            showRefresh: false,
+            beforePageText: '第',
+            afterPageText: '页    共 {pages} 页',
+            displayMsg: ' 共 {total} 条记录',
+            onSelectPage: function (pagenumber, pagesize) {
+            }
+        });
+    }
+    model.datagrid('loadData', []);
+    hideColumns(model, columns);
+}
+function getColumns(datacol) {
+    var columns = [];
+    $.each(datacol, function (index, value) {
+        var w = value.width;
+        if (w == null || w == "") {
+            w = 100;
+        }
+        var cdetail = { field: value.field, title: value.title, width: parseInt(w), align: 'center' };
+        if (value.formatter != null && value.formatter != "") {
+            cdetail.formatter = function (val, row, idx) {
+                return eval(value.formatter);
+            }
+        }
+        if (value.editor != null && value.editor != "") {
+            cdetail.editor = value.editor;
+            //cdetail.editor = { type: 'combobox', options: { required: true, editable: false, data: [{ id: '1', text: '高速公路' }], valueField: 'id', textField: 'text' } };
+        }
+        columns.push(cdetail);
+    });
+    return columns;
+}
+function hideColumns(model, columns) {
+    $.each(columns, function (index, value) {
+        if (value.hideColumn) {
+            model.datagrid('hideColumn', value.field);
+        }
+    });
+}
+function endAllEdit(dgv) {
+    var rowcount = dgv.datagrid('getRows').length;
+    for (var i = 0; i < rowcount; i++) {
+        dgv.datagrid('endEdit', i);
+    }
+    if (typeof (autoMoney) != "undefined") {
+        autoMoney();
+    }
+}
+function addRows(dgv, data) {
+    var wbsvalue = '';
+    if ($("#myh_WBS").length > 0 && $("#myh_WBS").combobox('getValue') == "0") {
+        return false;
+    }
+    if ($("#gsh_WBS").length > 0 && $("#gsh_WBS").combobox('getValue') == "0") {
+        return false;
+    }
+    if (qttype == 'myh') {
+        wbsvalue = $("#myh_WBS").combobox('getText');
+    } else if (qttype == 'gsh') {
+        wbsvalue = $("#gsh_WBS").combobox('getText');
+    } else {
+        wbsvalue = '市政中压';
+    }
+    data.wbs = wbsvalue;
+    var select = dgv.datagrid('getRows').length;
+    dgv.datagrid('insertRow', { index: select, row: data }).datagrid('selectRow', select);
+    dgv.datagrid('beginEdit', select);
+    addEditEvent(dgv, select);
+}
+function addEditEvent(dgv, i) {
+    var col = getColumnsInfo(dgv.attr("id"));
+    if (col == null) return;
+    $.each(col, function (index, value) {
+        if (value.editor != null && value.editor.type == "combobox") {
+            var ed = dgv.datagrid('getEditor', { index: i, field: value.field });
+            if (ed == null) return true;
+            var s = $(ed.target).combobox('getValue');
+            $(ed.target).attr("id", value.field);
+            if (value.field == "cz") {
+                loadGJData(dgv, $(ed.target), i);
+            }
+            $(ed.target).combobox({
+                panelheight: 100,
+                width: $(ed.target).width() - 20,
+                onSelect: function () {
+                    var model = $(this);
+                    if (model.combobox('getText') == "&nbsp;") {
+                        model.combobox('setText', '');
+                    }
+                    if (model.attr("id") == "cz") {
+                        loadGJData(dgv, model, i);
+                    }
+                }
+            });
+            $(ed.target).combobox('setValue', s);
+        }
+    });
+}
+function loadGJData(dgv, model, i) {
+    var ed = dgv.datagrid('getEditor', { index: i, field: "gj" });
+    if (ed == null) return true;
+    var str = $(ed.target).combobox('getValue', "");
+    $(ed.target).combobox('setValue', "");
+    switch (model.combobox('getValue')) {
+        case "0":
+            $(ed.target).combobox('loadData', []);
+            break;
+            //case "钢管":
+            //    $(ed.target).combobox('loadData', Utility.GGFormat);
+            //    break;
+            //case "PE管":
+            //    $(ed.target).combobox('loadData', Utility.PEFormat);
+            //    break;
+        case "镀锌管":
+            $(ed.target).combobox('loadData', Utility.DXFormat);
+            break;
+        case "钢管":
+            $(ed.target).combobox('loadData', Utility.QtGGFormat);
+            break;
+        case "PE管":
+            $(ed.target).combobox('loadData', Utility.QtPEFormat);
+            break;
+        case "复合管":
+            $(ed.target).combobox('loadData', Utility.FHFormat);
+            break;
+        //case "不锈钢管":
+        //    $(ed.target).combobox('loadData', Utility.BXGFormat);
+        //    break;
+    }
+    var data = $(ed.target).combobox('getData');
+    $.each(data, function (index, value) {
+        if (value.name == str) {
+            $(ed.target).combobox('setValue', str);
+            return false;
+        }
+    });
+}
+
+function objToStr(obj) {
+    var data = $.extend(true, {}, obj);
+    var str = "";
+    $.each(data, function (index, value) {
+        str += index + ":" + value + ",";
+    });
+    if (str != "") { str = str.substring(0, str.length - 1); }
+    return str;
+}
+function strToObj(str) {
+    if (str == null || str == "") return null;
+    var list = str.split(',');
+    var data = {};
+    $.each(list, function (index, value) {
+        var filed = value.split(':');
+        try {
+            data[filed[0]] = decodeURI(filed[1]);
+        } catch (ex) {
+            data[filed[0]] = filed[1];
+        }
+    });
+    return data;
+}
+
+/*************************************************初始化图表*************************************************/
+function charDataPie(jsonData, div, datacol) {
+    var legendData = [], xAxisDataW = [], xAxisDataN = [];
+    $.each(datacol, function (index, value) {
+        if (value.title != datacol[0].title) {
+            legendData.push(value.title);
+            $.each(jsonData, function (i, v) {
+                if (v[datacol[0].field] == "合计") {
+                    if (v[value.field].indexOf("%") != -1) {
+                        v[value.field] = v[value.field].substring(0, v[value.field].indexOf("%"));
+                    }
+                    xAxisDataN.push({
+                        value: v[value.field],
+                        name: value.title
+                    });
+                }
+            });
+        }
+    });
+    $.each(jsonData, function (i, v) {
+        if (v[datacol[0].field] != "合计") {
+            if (v["singlecostpcl"].indexOf("%") != -1) {
+                v["singlecostpcl"] = v["singlecostpcl"].substring(0, v["singlecostpcl"].indexOf("%"));
+            }
+            xAxisDataW.push({
+                value: v["singlecostpcl"],
+                name: v[datacol[0].field]
+            });
+        }
+    });
+    createChartPie(div, legendData, xAxisDataW, xAxisDataN);
+}
+function charDataBar(jsonData, div, datacol, type) {
+    var legendData = [], xAxisData = [], seriesData = [];
+    if (type == null) {
+        type = "bar"
+    }
+    $.each(datacol, function (index, value) {
+        if (value.title != datacol[0].title) {
+            legendData.push(value.title);
+            var data = [];
+            $.each(jsonData, function (i, v) {
+                if ($.inArray(v[datacol[0].field], xAxisData) == -1 && v[datacol[0].field] != "合计") {
+                    xAxisData.push(v[datacol[0].field]);
+                }
+                data.push(v[value.field]);
+            });
+            seriesData.push({
+                name: value.title,
+                type: type,
+                data: data
+            });
+        }
+    });
+    if (xAxisData != null && xAxisData.length > 0) {
+        createChartBar(div, legendData, xAxisData, seriesData);
+    }
+}
+function createChartPie(div, legendData, xAxisDataW, xAxisDataN) {
+    var mychart = echarts.init(div[0]);
+    mychart.clear();
+    option = {
+        tooltip: {
+            trigger: 'item',
+            formatter: "{a} <br/>{b}: {c} ({d}%)"
+        },
+        legend: {
+            orient: 'vertical',
+            x: 'left',
+            data: legendData
+        },
+        series: [
+            {
+                name: '类型',
+                type: 'pie',
+                selectedMode: 'single',
+                radius: [0, '30%'],
+
+                label: {
+                    normal: {
+                        position: 'inner'
+                    }
+                },
+                labelLine: {
+                    normal: {
+                        show: false
+                    }
+                },
+                data: xAxisDataN
+            },
+            {
+                name: '类型',
+                type: 'pie',
+                radius: ['40%', '55%'],
+
+                data: xAxisDataW
+            }
+        ]
+    };
+    mychart.setOption(option);
+}
+function createChartBar(div, legendData, xAxisData, seriesData) {
+    var mychart = echarts.init(div[0]);
+    mychart.clear();
+    option = {
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'shadow'
+            }
+        },
+        legend: {
+            data: legendData
+        },
+        grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            containLabel: true
+        },
+        xAxis: [
+            {
+                type: 'category',
+                data: xAxisData
+            }
+        ],
+        yAxis: [
+            {
+                type: 'value'
+            }
+        ],
+        series: seriesData
+    };
+    mychart.setOption(option);
+}
+
+function getprocessname(value, row, index) {
+    var name = "";
+    switch (value) {
+        case "1":
+            name = "项目立项";
+            break;
+        case "2":
+            name = "图纸设计";
+            break;
+        case "3":
+            name = "施工准备";
+            break;
+        case "4":
+            name = "技术交底";
+            break;
+        case "5":
+            name = "施工中";
+            break;
+        case "6":
+            name = "竣工验收";
+            break;
+        case "7":
+            name = "工程结算";
+            break;
+        case "8":
+            name = "工程完工";
+            break;
+        default:
+            break;
+    }
+    return name;
+}
+
+function unformatMoney(sVal) {
+    var fTmp = parseFloat(sVal.toString().replace(/,/g, ''));
+    return (isNaN(fTmp) ? 0 : fTmp);
+}
+
+function LoadMsgTipe(title) {
+    $("<div class=\"datagrid-mask\"></div>").css({ display: "block", width: "100%", height: $(window).height(), zIndex: 10000 }).appendTo("body");
+    $("<div class=\"datagrid-mask-msg\"></div>").html("" + title + "").appendTo("body").css({ display: "block", zIndex: 10001, left: ($(document.body).outerWidth(true) - 190) / 2, top: ($(window).height() - 45) / 2 });
+}
+//hidden Load  
+function HideMsgTipe() {
+    $(".datagrid-mask").remove();
+    $(".datagrid-mask-msg").remove();
+}
+
+//驳回时上传文件
+function uploadfile() {
+    filePath = $('#rejectfile').val();
+    document.getElementById('rejecttxt').value = filePath;
+    docName = filePath.split("\\").pop().split(".")[0];
+    docNameTxt = filePath.split("\\").pop();
+
+    //上传文档
+    var options = {
+        url: $.ecity.url(ennServiceMainUrl + "/uploadFile?" + new Date()), //后台的处理，也就是form里的action
+        type: "post",
+        dataType: "application/msword,application/pdf,text/plain", //数据格式，有XML，html，json，默认为文本
+        success: function (response, option) {
+            var result = $(response);
+            response = $(result)[0].innerHTML;
+            var res = typeof (response) == 'string' ? JSON.parse(response) : response;
+            var preUrl = res.photos[0];
+            var bid;
+            if(isFirstReject){//初审驳回
+               bid = globalcbgid;
+            }else{//复审驳回
+               bid = curobjgid;
+            }
+            if (res.success) {
+                var fileinfo = new UploadFile("", bid, docNameTxt, preUrl, userInfo.trueName, userInfo.id, new Date().format("yyyy-MM-dd HH:mm:ss"));
+                rejectfiles.push(fileinfo);
+            }
+            //writeLogSave("5");
+            $('#rejectfile').val('');
+            $.ecity.dialog.message("上传数据服务成功！", 1000);
+        },
+        error: function (response, option) {
+            $.ecity.dialog.message("上传数据服务失败！", 1000);
+            $('#rejectfile').val('');
+        }
+    };
+    $('#rejectform').ajaxSubmit(options);
+}
+
+function writeOperateLog(loginfo) {
+    loginfo.userid = userInfo.id;
+    var data = JSON.stringify(loginfo);
+    try {
+        tableServer.append(serviceUrlNet, cbOperateLogTable, data, function (res) {
+            if ($.ecity.error.validate(res)) {
+                console.log(res);
+                return;
+            }
+        });
+    } catch (e) {
+        console.log(e.message);
+    }
+}
+
+function getSpecialInfo(proid,sgdwid){
+   var condition={};
+   condition['proid']=proid;
+   condition['sgdwid']=sgdwid;
+   $.get($.ecity.url(ennServiceUrl + "/getSpecialCostInfo?" + new Date()), condition, function (res) {
+        var rest = ($.type("res") === "string") ? JSON.parse(res) : res;
+        if (rest.success) {
+            var ordermark = rest.ordermark;
+            var cbjsmoney = rest.cbjsmoney;
+            var tzjsmoney = rest.tzjsmoney;
+            initSpecialCombobox(ordermark,cbjsmoney,tzjsmoney);
+        }
+    });
+}
+//初始化是否特殊业务下拉框
+function initSpecialCombobox(ordermark,cbjsmoney,tzjsmoney){
+    var data = [{"value":0,"text":"是"},{"value":1,"text":"否"}];
+    $("#isspeacialinfo").combobox({
+       valueField:'value',
+       textField:'text',
+       editable:false,
+       data:data,
+       onSelect:function(val){
+          if(val.value == 0){//是
+             $(".specialinput").attr('disabled',false);
+             $(".specialinput").css("background","");
+          }else{//否，不可输，值为空
+             $("#cbjsmoney").val("");
+             $("#tzjsmoney").val("");
+             $(".specialinput").attr('disabled',"disabled");
+             $(".specialinput").css("background","#CCCCCC");
+          }
+          //详情&&造价审核界面
+          if(pagedetail == "detail" || flag == "audit"){
+             $(".specialinput").attr('disabled',"disabled");
+             $("#isspeacialinfo").combobox('disable');
+          }
+       }
+    });
+    if(ordermark != ""){
+       $("#isspeacialinfo").combobox('select',ordermark);
+       $("#cbjsmoney").val(cbjsmoney);
+       $("#tzjsmoney").val(tzjsmoney);
+    }else{
+       $("#isspeacialinfo").combobox('select','1');
+    }
+}
+//校验输入为两位小数
+function checkInput($this){
+   var $current = $($this);
+   var thisVal = $current.val();
+   thisVal = thisVal.replace(/[^\d.]/g, "");//先把非数字的都替换掉，除了数字和.
+   thisVal = thisVal.replace(/^\./g, "");//必须保证第一个为数字而不是.
+   thisVal = thisVal.replace(/\.{2,}/g, ".");//保证只有出现一个.而没有多个.
+   thisVal = thisVal.replace(".", "$#$").replace(/\./g, "").replace("$#$", ".");//保证.只出现一次，而不能出现两次以上
+   thisVal = thisVal.replace(/([0-9]+\.[0-9]{4})[0-9]*/, "$1");//保证.只后面只能出现两位有效数字
+   $current.val(thisVal);
+}
